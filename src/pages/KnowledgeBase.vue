@@ -59,245 +59,255 @@
       <el-tabs v-model="activeTab" class="resource-tabs">
         <!-- 活动模板标签页 -->
         <el-tab-pane label="活动模板" name="planning">
-          <div class="resource-grid">
-            <el-col v-for="template in filteredPlanningTemplates" :key="template.id" :span="8">
-              <el-card class="resource-card" shadow="hover">
-                <template #header>
-                  <div class="card-header">
-                    <h4>{{ template.name }}</h4>
-                    <el-tag :type="getTypeColor(template.type)" size="small">{{ template.type }}</el-tag>
+          <div class="resource-container">
+            <el-row :gutter="20">
+              <el-col v-for="template in filteredPlanningTemplates" :key="template.id" :span="8">
+                <el-card class="resource-card" shadow="hover">
+                  <template #header>
+                    <div class="card-header">
+                      <h4>{{ template.name }}</h4>
+                      <el-tag :type="getTypeColor(template.type)" size="small">{{ template.type }}</el-tag>
+                    </div>
+                  </template>
+                  <div class="resource-content">
+                    <p class="resource-description">{{ template.description }}</p>
+                    <div class="resource-meta">
+                      <span class="meta-item">
+                        <el-icon><Clock /></el-icon>
+                        {{ template.createdAt }}
+                      </span>
+                      <span class="meta-item">
+                        <el-icon><Download /></el-icon>
+                        {{ template.downloads }}
+                      </span>
+                    </div>
                   </div>
-                </template>
-                <div class="resource-content">
-                  <p class="resource-description">{{ template.description }}</p>
-                  <div class="resource-meta">
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ template.createdAt }}
-                    </span>
-                    <span class="meta-item">
+                  <div class="resource-actions">
+                    <el-button type="primary" size="small" @click="previewTemplate(template)">
+                      <el-icon><View /></el-icon>
+                      预览
+                    </el-button>
+                    <el-button size="small" @click="useTemplate(template)">
+                      <el-icon><Check /></el-icon>
+                      使用
+                    </el-button>
+                    <el-button size="small" @click="downloadTemplate(template)">
                       <el-icon><Download /></el-icon>
-                      {{ template.downloads }}
-                    </span>
+                      下载
+                    </el-button>
                   </div>
-                </div>
-                <div class="resource-actions">
-                  <el-button type="primary" size="small" @click="previewTemplate(template)">
-                    <el-icon><View /></el-icon>
-                    预览
-                  </el-button>
-                  <el-button size="small" @click="useTemplate(template)">
-                    <el-icon><Check /></el-icon>
-                    使用
-                  </el-button>
-                  <el-button size="small" @click="downloadTemplate(template)">
-                    <el-icon><Download /></el-icon>
-                    下载
-                  </el-button>
-                </div>
-              </el-card>
-            </el-col>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </el-tab-pane>
 
         <!-- 物料清单标签页 -->
         <el-tab-pane label="物料清单" name="materials">
-          <div class="resource-grid">
-            <el-col v-for="checklist in filteredMaterials" :key="checklist.id" :span="8">
-              <el-card class="resource-card" shadow="hover">
-                <template #header>
-                  <div class="card-header">
-                    <h4>{{ checklist.name }}</h4>
-                    <el-tag :type="getTypeColor(checklist.type)" size="small">{{ checklist.type }}</el-tag>
+          <div class="resource-container">
+            <el-row :gutter="20">
+              <el-col v-for="checklist in filteredMaterials" :key="checklist.id" :span="8">
+                <el-card class="resource-card" shadow="hover">
+                  <template #header>
+                    <div class="card-header">
+                      <h4>{{ checklist.name }}</h4>
+                      <el-tag :type="getTypeColor(checklist.type)" size="small">{{ checklist.type }}</el-tag>
+                    </div>
+                  </template>
+                  <div class="resource-content">
+                    <p class="resource-description">{{ checklist.description }}</p>
+                    <div class="checklist-preview">
+                      <el-progress :percentage="checklist.completionRate" />
+                      <span class="completion-text">{{ checklist.items }}项物品</span>
+                    </div>
+                    <div class="resource-meta">
+                      <span class="meta-item">
+                        <el-icon><Clock /></el-icon>
+                        {{ checklist.createdAt }}
+                      </span>
+                      <span class="meta-item">
+                        <el-icon><Download /></el-icon>
+                        {{ checklist.downloads }}
+                      </span>
+                    </div>
                   </div>
-                </template>
-                <div class="resource-content">
-                  <p class="resource-description">{{ checklist.description }}</p>
-                  <div class="checklist-preview">
-                    <el-progress :percentage="checklist.completionRate" />
-                    <span class="completion-text">{{ checklist.items }}项物品</span>
-                  </div>
-                  <div class="resource-meta">
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ checklist.createdAt }}
-                    </span>
-                    <span class="meta-item">
+                  <div class="resource-actions">
+                    <el-button type="primary" size="small" @click="previewChecklist(checklist)">
+                      <el-icon><View /></el-icon>
+                      查看
+                    </el-button>
+                    <el-button size="small" @click="useChecklist(checklist)">
+                      <el-icon><Check /></el-icon>
+                      使用
+                    </el-button>
+                    <el-button size="small" @click="downloadChecklist(checklist)">
                       <el-icon><Download /></el-icon>
-                      {{ checklist.downloads }}
-                    </span>
+                      下载
+                    </el-button>
                   </div>
-                </div>
-                <div class="resource-actions">
-                  <el-button type="primary" size="small" @click="previewChecklist(checklist)">
-                    <el-icon><View /></el-icon>
-                    查看
-                  </el-button>
-                  <el-button size="small" @click="useChecklist(checklist)">
-                    <el-icon><Check /></el-icon>
-                    使用
-                  </el-button>
-                  <el-button size="small" @click="downloadChecklist(checklist)">
-                    <el-icon><Download /></el-icon>
-                    下载
-                  </el-button>
-                </div>
-              </el-card>
-            </el-col>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </el-tab-pane>
 
         <!-- 合同模板标签页 -->
         <el-tab-pane label="合同模板" name="contracts">
-          <div class="resource-grid">
-            <el-col v-for="contract in filteredContracts" :key="contract.id" :span="8">
-              <el-card class="resource-card" shadow="hover">
-                <template #header>
-                  <div class="card-header">
-                    <h4>{{ contract.name }}</h4>
-                    <el-tag :type="getTypeColor(contract.type)" size="small">{{ contract.type }}</el-tag>
-                  </div>
-                </template>
-                <div class="resource-content">
-                  <p class="resource-description">{{ contract.description }}</p>
-                  <div class="contract-info">
-                    <div class="info-item">
-                      <span class="label">适用场景：</span>
-                      <span class="value">{{ contract.scenario }}</span>
+          <div class="resource-container">
+            <el-row :gutter="20">
+              <el-col v-for="contract in filteredContracts" :key="contract.id" :span="8">
+                <el-card class="resource-card" shadow="hover">
+                  <template #header>
+                    <div class="card-header">
+                      <h4>{{ contract.name }}</h4>
+                      <el-tag :type="getTypeColor(contract.type)" size="small">{{ contract.type }}</el-tag>
                     </div>
-                    <div class="info-item">
-                      <span class="label">版本：</span>
-                      <span class="value">{{ contract.version }}</span>
+                  </template>
+                  <div class="resource-content">
+                    <p class="resource-description">{{ contract.description }}</p>
+                    <div class="contract-info">
+                      <div class="info-item">
+                        <span class="label">适用场景：</span>
+                        <span class="value">{{ contract.scenario }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="label">版本：</span>
+                        <span class="value">{{ contract.version }}</span>
+                      </div>
+                    </div>
+                    <div class="resource-meta">
+                      <span class="meta-item">
+                        <el-icon><Clock /></el-icon>
+                        {{ contract.createdAt }}
+                      </span>
+                      <span class="meta-item">
+                        <el-icon><Download /></el-icon>
+                        {{ contract.downloads }}
+                      </span>
                     </div>
                   </div>
-                  <div class="resource-meta">
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ contract.createdAt }}
-                    </span>
-                    <span class="meta-item">
+                  <div class="resource-actions">
+                    <el-button type="primary" size="small" @click="previewContract(contract)">
+                      <el-icon><View /></el-icon>
+                      预览
+                    </el-button>
+                    <el-button size="small" @click="useContract(contract)">
+                      <el-icon><Edit /></el-icon>
+                      编辑
+                    </el-button>
+                    <el-button size="small" @click="downloadContract(contract)">
                       <el-icon><Download /></el-icon>
-                      {{ contract.downloads }}
-                    </span>
+                      下载
+                    </el-button>
                   </div>
-                </div>
-                <div class="resource-actions">
-                  <el-button type="primary" size="small" @click="previewContract(contract)">
-                    <el-icon><View /></el-icon>
-                    预览
-                  </el-button>
-                  <el-button size="small" @click="useContract(contract)">
-                    <el-icon><Edit /></el-icon>
-                    编辑
-                  </el-button>
-                  <el-button size="small" @click="downloadContract(contract)">
-                    <el-icon><Download /></el-icon>
-                    下载
-                  </el-button>
-                </div>
-              </el-card>
-            </el-col>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </el-tab-pane>
 
         <!-- 主持稿标签页 -->
         <el-tab-pane label="主持稿" name="scripts">
-          <div class="resource-grid">
-            <el-col v-for="script in filteredScripts" :key="script.id" :span="8">
-              <el-card class="resource-card" shadow="hover">
-                <template #header>
-                  <div class="card-header">
-                    <h4>{{ script.name }}</h4>
-                    <el-tag :type="getTypeColor(script.type)" size="small">{{ script.type }}</el-tag>
+          <div class="resource-container">
+            <el-row :gutter="20">
+              <el-col v-for="script in filteredScripts" :key="script.id" :span="8">
+                <el-card class="resource-card" shadow="hover">
+                  <template #header>
+                    <div class="card-header">
+                      <h4>{{ script.name }}</h4>
+                      <el-tag :type="getTypeColor(script.type)" size="small">{{ script.type }}</el-tag>
+                    </div>
+                  </template>
+                  <div class="resource-content">
+                    <p class="resource-description">{{ script.description }}</p>
+                    <div class="script-preview">
+                      <div class="preview-text">{{ script.preview }}</div>
+                    </div>
+                    <div class="resource-meta">
+                      <span class="meta-item">
+                        <el-icon><Clock /></el-icon>
+                        {{ script.createdAt }}
+                      </span>
+                      <span class="meta-item">
+                        <el-icon><Download /></el-icon>
+                        {{ script.downloads }}
+                      </span>
+                    </div>
                   </div>
-                </template>
-                <div class="resource-content">
-                  <p class="resource-description">{{ script.description }}</p>
-                  <div class="script-preview">
-                    <div class="preview-text">{{ script.preview }}</div>
-                  </div>
-                  <div class="resource-meta">
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ script.createdAt }}
-                    </span>
-                    <span class="meta-item">
+                  <div class="resource-actions">
+                    <el-button type="primary" size="small" @click="previewScript(script)">
+                      <el-icon><View /></el-icon>
+                      预览
+                    </el-button>
+                    <el-button size="small" @click="useScript(script)">
+                      <el-icon><Edit /></el-icon>
+                      编辑
+                    </el-button>
+                    <el-button size="small" @click="downloadScript(script)">
                       <el-icon><Download /></el-icon>
-                      {{ script.downloads }}
-                    </span>
+                      下载
+                    </el-button>
                   </div>
-                </div>
-                <div class="resource-actions">
-                  <el-button type="primary" size="small" @click="previewScript(script)">
-                    <el-icon><View /></el-icon>
-                    预览
-                  </el-button>
-                  <el-button size="small" @click="useScript(script)">
-                    <el-icon><Edit /></el-icon>
-                    编辑
-                  </el-button>
-                  <el-button size="small" @click="downloadScript(script)">
-                    <el-icon><Download /></el-icon>
-                    下载
-                  </el-button>
-                </div>
-              </el-card>
-            </el-col>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </el-tab-pane>
 
         <!-- 应急预案标签页 -->
         <el-tab-pane label="应急预案" name="emergency">
-          <div class="resource-grid">
-            <el-col v-for="plan in filteredEmergencyPlans" :key="plan.id" :span="8">
-              <el-card class="resource-card" shadow="hover">
-                <template #header>
-                  <div class="card-header">
-                    <h4>{{ plan.name }}</h4>
-                    <el-tag :type="getTypeColor(plan.type)" size="small">{{ plan.type }}</el-tag>
-                  </div>
-                </template>
-                <div class="resource-content">
-                  <p class="resource-description">{{ plan.description }}</p>
-                  <div class="emergency-info">
-                    <div class="risk-level">
-                      <span class="label">风险等级：</span>
-                      <el-tag :type="getRiskLevelColor(plan.riskLevel)" size="small">
-                        {{ plan.riskLevel }}
-                      </el-tag>
+          <div class="resource-container">
+            <el-row :gutter="20">
+              <el-col v-for="plan in filteredEmergencyPlans" :key="plan.id" :span="8">
+                <el-card class="resource-card" shadow="hover">
+                  <template #header>
+                    <div class="card-header">
+                      <h4>{{ plan.name }}</h4>
+                      <el-tag :type="getTypeColor(plan.type)" size="small">{{ plan.type }}</el-tag>
                     </div>
-                    <div class="applicable-scenarios">
-                      <span class="label">适用场景：</span>
-                      <span class="value">{{ plan.scenarios.join('、') }}</span>
+                  </template>
+                  <div class="resource-content">
+                    <p class="resource-description">{{ plan.description }}</p>
+                    <div class="emergency-info">
+                      <div class="risk-level">
+                        <span class="label">风险等级：</span>
+                        <el-tag :type="getRiskLevelColor(plan.riskLevel)" size="small">
+                          {{ plan.riskLevel }}
+                        </el-tag>
+                      </div>
+                      <div class="applicable-scenarios">
+                        <span class="label">适用场景：</span>
+                        <span class="value">{{ plan.scenarios.join('、') }}</span>
+                      </div>
+                    </div>
+                    <div class="resource-meta">
+                      <span class="meta-item">
+                        <el-icon><Clock /></el-icon>
+                        {{ plan.createdAt }}
+                      </span>
+                      <span class="meta-item">
+                        <el-icon><Download /></el-icon>
+                        {{ plan.downloads }}
+                      </span>
                     </div>
                   </div>
-                  <div class="resource-meta">
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ plan.createdAt }}
-                    </span>
-                    <span class="meta-item">
+                  <div class="resource-actions">
+                    <el-button type="primary" size="small" @click="previewEmergencyPlan(plan)">
+                      <el-icon><View /></el-icon>
+                      预览
+                    </el-button>
+                    <el-button size="small" @click="useEmergencyPlan(plan)">
+                      <el-icon><Edit /></el-icon>
+                      编辑
+                    </el-button>
+                    <el-button size="small" @click="downloadEmergencyPlan(plan)">
                       <el-icon><Download /></el-icon>
-                      {{ plan.downloads }}
-                    </span>
+                      下载
+                    </el-button>
                   </div>
-                </div>
-                <div class="resource-actions">
-                  <el-button type="primary" size="small" @click="previewEmergencyPlan(plan)">
-                    <el-icon><View /></el-icon>
-                    预览
-                  </el-button>
-                  <el-button size="small" @click="useEmergencyPlan(plan)">
-                    <el-icon><Edit /></el-icon>
-                    编辑
-                  </el-button>
-                  <el-button size="small" @click="downloadEmergencyPlan(plan)">
-                    <el-icon><Download /></el-icon>
-                    下载
-                  </el-button>
-                </div>
-              </el-card>
-            </el-col>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -833,10 +843,35 @@ const submitCreate = () => {
 .content-card {
   border-radius: 12px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  min-height: 600px;
+}
+
+.resource-tabs {
+  min-height: 500px;
 }
 
 .resource-tabs :deep(.el-tabs__header) {
   margin-bottom: 30px;
+}
+
+.resource-tabs :deep(.el-tabs__content) {
+  min-height: 400px;
+}
+
+.resource-container {
+  width: 100%;
+  padding-bottom: 20px;
+}
+
+.resource-container .el-row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.resource-container .el-col {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  margin-bottom: 20px;
 }
 
 .resource-grid {
@@ -1014,5 +1049,26 @@ const submitCreate = () => {
 
 :deep(.el-upload-dragger) {
   width: 100%;
+}
+
+/* 响应式布局 */
+@media (max-width: 1200px) {
+  .resource-container .el-col {
+    span: 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .resource-container .el-col {
+    span: 24;
+  }
+  
+  .page-header h2 {
+    font-size: 24px;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+  }
 }
 </style>

@@ -32,6 +32,24 @@
           <el-icon><Document /></el-icon>
           <span>知识库</span>
         </el-menu-item>
+        <el-sub-menu index="/admin">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/admin/organization">
+            <el-icon><OfficeBuilding /></el-icon>
+            <span>组织架构</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/users">
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/roles">
+            <el-icon><Key /></el-icon>
+            <span>角色管理</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </div>
     
@@ -71,7 +89,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useActivityStore } from '../stores/activity'
-import { House, List, Star, TrendCharts, Document } from '@element-plus/icons-vue'
+import { House, List, Star, TrendCharts, Document, Setting, OfficeBuilding, User, Key } from '@element-plus/icons-vue'
 
 const store = useActivityStore()
 const unreadNotifications = computed(() => store.unreadNotifications)
