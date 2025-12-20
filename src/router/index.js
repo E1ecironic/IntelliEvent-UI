@@ -8,6 +8,7 @@ import KnowledgeBase from '../pages/KnowledgeBase.vue'
 import OrganizationManage from '../pages/admin/OrganizationManage.vue'
 import UserManage from '../pages/admin/UserManage.vue'
 import RoleManage from '../pages/admin/RoleManage.vue'
+import ApiTest from '../pages/admin/ApiTest.vue'
 
 const routes = [
   {
@@ -54,6 +55,11 @@ const routes = [
     path: '/admin/roles',
     name: 'RoleManage',
     component: RoleManage
+  },
+  {
+    path: '/admin/api-test',
+    name: 'ApiTest',
+    component: ApiTest
   }
 ]
 

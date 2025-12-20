@@ -50,120 +50,161 @@
           </el-select>
         </el-col>
         <el-col :span="4">
+          <el-button type="primary" @click="handleFilter">搜索</el-button>
           <el-button @click="resetFilter">重置</el-button>
         </el-col>
       </el-row>
     </el-card>
 
-    <!-- 组织树形表格 -->
+    <!-- 组织架构树形展示 -->
     <el-card class="content-card">
       <div class="tree-container">
         <el-tree
-          ref="orgTreeRef"
-          :data="organizationTree"
+          ref="treeRef"
+          :data="organizationList"
           :props="treeProps"
           :expand-on-click-node="false"
-          :default-expanded-keys="expandedKeys"
-          node-key="id"
-          highlight-current
+          :highlight-current="true"
+          :filter-node-method="filterNode"
+          node-key="orgId"
+          default-expand-all
           @node-click="handleNodeClick"
         >
           <template #default="{ node, data }">
             <div class="org-node">
               <div class="node-info">
                 <div class="org-name">
-                  <el-icon v-if="data.level === 1" style="margin-right: 8px; color: #409eff;"><OfficeBuilding /></el-icon>
-                  <el-icon v-else style="margin-right: 8px; color: #67c23a;"><Folder /></el-icon>
-                  <span>{{ data.name }}</span>
-                  <el-tag v-if="data.level === 1" type="primary" size="small" style="margin-left: 8px;">顶级</el-tag>
-                  <el-tag v-if="data.status === 0" type="info" size="small" style="margin-left: 8px;">已禁用</el-tag>
+                  <el-icon style="margin-right: 8px;">
+                    <OfficeBuilding v-if="data.level === 1" />
+                    <Folder v-else />
+                  </el-icon>
+                  {{ data.orgName }}
+                  <el-tag
+                    v-if="data.level === 1"
+                    type="success"
+                    size="small"
+                    style="margin-left: 8px;"
+                  >
+                    顶级
+                  </el-tag>
+                  <el-tag
+                    v-if="data.status === 0"
+                    type="info"
+                    size="small"
+                    style="margin-left: 8px;"
+                  >
+                    已禁用
+                  </el-tag>
                 </div>
                 <div class="org-meta">
                   <span class="meta-item">
-                    <el-icon><Key /></el-icon>
-                    编码: {{ data.code || '-' }}
+                    <el-icon><Document /></el-icon>
+                    编码: {{ data.orgCode }}
                   </span>
                   <span class="meta-item">
                     <el-icon><User /></el-icon>
-                    负责人: {{ data.managerName || '-' }}
+                    负责人: {{ data.leaderName || '未设置' }}
                   </span>
                   <span class="meta-item">
-                    <el-icon><Clock /></el-icon>
-                    创建: {{ data.createdAt }}
+                    <el-icon><Phone /></el-icon>
+                    电话: {{ data.phone || '未设置' }}
+                  </span>
+                  <span class="meta-item">
+                    <el-icon><Location /></el-icon>
+                    层级: {{ data.level }}级
                   </span>
                 </div>
               </div>
               <div class="node-actions">
-                <el-button type="primary" link @click.stop="handleAddChild(data)">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click.stop="showAddChildDialog(data)"
+                >
                   <el-icon><Plus /></el-icon>
-                  添加子组织
+                  添加下级
                 </el-button>
-                <el-button type="warning" link @click.stop="handleEdit(data)">
+                <el-button
+                  size="small"
+                  @click.stop="showEditDialog(data)"
+                >
                   <el-icon><Edit /></el-icon>
                   编辑
                 </el-button>
-                <el-button 
-                  :type="data.status === 1 ? 'danger' : 'success'" 
-                  link 
-                  @click.stop="handleToggleStatus(data)"
+                <el-button
+                  size="small"
+                  @click.stop="showUsersDialog(data)"
                 >
-                  <el-icon><Switch /></el-icon>
-                  {{ data.status === 1 ? '禁用' : '启用' }}
+                  <el-icon><User /></el-icon>
+                  成员
                 </el-button>
-                <el-button type="info" link @click.stop="handleViewUsers(data)">
-                  <el-icon><UserFilled /></el-icon>
-                  查看成员
+                <el-button
+                  :type="data.status === 1 ? 'danger' : 'success'"
+                  size="small"
+                  @click.stop="toggleStatus(data)"
+                >
+                  <el-icon><SwitchButton /></el-icon>
+                  {{ data.status === 1 ? '禁用' : '启用' }}
                 </el-button>
               </div>
             </div>
           </template>
         </el-tree>
       </div>
+
+      <!-- 分页控件 -->
+      <div class="pagination-container" v-if="totalCount > 0">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="totalCount"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handlePageSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </el-card>
 
     <!-- 新增/编辑组织对话框 -->
     <el-dialog
       v-model="showAddDialog"
-      :title="isEdit ? '编辑组织' : '新增组织'"
+      :title="editingOrg ? '编辑组织' : '新增组织'"
       width="600px"
       @close="resetForm"
     >
       <el-form ref="orgFormRef" :model="orgForm" :rules="orgRules" label-width="100px">
-        <el-form-item label="上级组织" v-if="!isEdit || orgForm.parentId">
+        <el-form-item label="组织名称" prop="orgName">
+          <el-input v-model="orgForm.orgName" placeholder="请输入组织名称" />
+        </el-form-item>
+        <el-form-item label="组织编码" prop="orgCode">
+          <el-input v-model="orgForm.orgCode" placeholder="请输入组织编码" />
+        </el-form-item>
+        <el-form-item label="上级组织" prop="parentId">
           <el-tree-select
             v-model="orgForm.parentId"
-            :data="organizationOptions"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="选择上级组织（不选则为顶级组织）"
+            :data="organizationList"
+            :props="treeProps"
+            placeholder="请选择上级组织"
             clearable
-            check-strictly
           />
         </el-form-item>
-        <el-form-item label="组织名称" prop="name">
-          <el-input v-model="orgForm.name" placeholder="请输入组织名称" />
+        <el-form-item label="负责人" prop="leaderName">
+          <el-input v-model="orgForm.leaderName" placeholder="请输入负责人姓名" />
         </el-form-item>
-        <el-form-item label="组织编码" prop="code">
-          <el-input v-model="orgForm.code" placeholder="请输入组织编码（可选）" />
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="orgForm.phone" placeholder="请输入联系电话" />
         </el-form-item>
-        <el-form-item label="负责人" prop="managerId">
-          <el-select
-            v-model="orgForm.managerId"
-            placeholder="选择组织负责人"
-            clearable
-            filterable
-          >
-            <el-option
-              v-for="user in managerOptions"
-              :key="user.id"
-              :label="user.realName || user.username"
-              :value="user.id"
-            />
-          </el-select>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="orgForm.email" placeholder="请输入邮箱地址" />
+        </el-form-item>
+        <el-form-item label="排序" prop="sortOrder">
+          <el-input-number v-model="orgForm.sortOrder" :min="0" :max="999" />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="orgForm.status">
-            <el-radio :value="1">正常</el-radio>
-            <el-radio :value="0">禁用</el-radio>
+            <el-radio :label="1">正常</el-radio>
+            <el-radio :label="0">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
@@ -171,60 +212,41 @@
             v-model="orgForm.remark"
             type="textarea"
             :rows="3"
-            placeholder="请输入备注信息（可选）"
+            placeholder="请输入备注信息"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showAddDialog = false">取消</el-button>
-          <el-button type="primary" @click="submitForm" :loading="isSubmitting">
-            {{ isEdit ? '保存' : '创建' }}
-          </el-button>
+          <el-button type="primary" @click="saveOrganization">确定</el-button>
         </span>
       </template>
     </el-dialog>
 
-    <!-- 组织成员对话框 -->
+    <!-- 组织成员管理对话框 -->
     <el-dialog
-      v-model="showUsersDialog"
-      :title="`组织成员 - ${currentOrg?.name}`"
+      v-model="showUsersDialogFlag"
+      title="组织成员管理"
       width="800px"
+      @close="currentOrgUsers = []"
     >
       <div class="org-users-container">
         <div class="users-header">
-          <span>成员列表（{{ orgUsers.length }}人）</span>
-          <el-button type="primary" link @click="showAddUserDialog = true">
+          <span>{{ currentOrg?.orgName }} - 成员列表</span>
+          <el-button type="primary" size="small" @click="showAddUserDialog = true">
             <el-icon><Plus /></el-icon>
             添加成员
           </el-button>
         </div>
-        <el-table :data="orgUsers" style="width: 100%" v-loading="usersLoading">
-          <el-table-column prop="realName" label="姓名" min-width="120">
+        <el-table :data="currentOrgUsers" style="width: 100%">
+          <el-table-column prop="userName" label="姓名" width="120" />
+          <el-table-column prop="position" label="职位" width="150" />
+          <el-table-column prop="email" label="邮箱" />
+          <el-table-column prop="phone" label="电话" width="120" />
+          <el-table-column label="操作" width="100" fixed="right">
             <template #default="{ row }">
-              <div class="user-info">
-                <el-avatar :size="32" :src="row.avatarUrl" v-if="row.avatarUrl">
-                  {{ (row.realName || row.username).charAt(0) }}
-                </el-avatar>
-                <div class="user-name">
-                  <div class="name">{{ row.realName || row.username }}</div>
-                  <div class="position">{{ row.position || '-' }}</div>
-                </div>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="email" label="邮箱" min-width="180" />
-          <el-table-column prop="phone" label="手机" min-width="120" />
-          <el-table-column prop="status" label="状态" width="80">
-            <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                {{ row.status === 1 ? '正常' : '禁用' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="120" fixed="right">
-            <template #default="{ row }">
-              <el-button type="danger" link @click="removeUserFromOrg(row)">
+              <el-button type="danger" size="small" @click="removeUserFromOrg(row)">
                 移除
               </el-button>
             </template>
@@ -236,344 +258,288 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Search,
   Plus,
-  Edit,
-  Switch,
-  User,
-  UserFilled,
-  Key,
-  Clock,
+  Search,
   OfficeBuilding,
-  Folder
+  Folder,
+  Document,
+  User,
+  Phone,
+  Location,
+  Edit,
+  SwitchButton
 } from '@element-plus/icons-vue'
+import organizationApi from '../../api/organization'
 
-// 搜索和筛选
+// 响应式数据
+const loading = ref(false)
+const organizationList = ref([])
+const allOrganizationData = ref([]) // 存储所有数据用于前端搜索
 const searchKeyword = ref('')
 const filterStatus = ref('')
 const filterLevel = ref('')
-
-// 树形控件
-const orgTreeRef = ref()
-const expandedKeys = ref([])
-
-// 对话框状态
 const showAddDialog = ref(false)
-const showUsersDialog = ref(false)
+const showUsersDialogFlag = ref(false)
 const showAddUserDialog = ref(false)
-const isEdit = ref(false)
-const isSubmitting = ref(false)
-const usersLoading = ref(false)
-
-// 当前操作的数据
+const editingOrg = ref(null)
 const currentOrg = ref(null)
-const currentNode = ref(null)
+const currentOrgUsers = ref([])
+const treeRef = ref(null)
+
+// 分页数据
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalCount = ref(0)
 
 // 表单数据
 const orgForm = reactive({
-  id: null,
+  orgName: '',
+  orgCode: '',
   parentId: null,
-  name: '',
-  code: '',
-  managerId: null,
+  leaderName: '',
+  phone: '',
+  email: '',
+  sortOrder: 0,
   status: 1,
   remark: ''
 })
 
 // 表单验证规则
 const orgRules = {
-  name: [
+  orgName: [
     { required: true, message: '请输入组织名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '组织名称长度在 2 到 50 个字符', trigger: 'blur' }
+    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  code: [
-    { max: 50, message: '组织编码长度不能超过 50 个字符', trigger: 'blur' }
-  ],
-  status: [
-    { required: true, message: '请选择状态', trigger: 'change' }
+  orgCode: [
+    { required: true, message: '请输入组织编码', trigger: 'blur' },
+    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
   ]
 }
 
-// 模拟组织数据
-const organizationList = ref([
-  {
-    id: 1,
-    name: '总公司',
-    parentId: null,
-    code: 'HQ',
-    level: 1,
-    managerId: 1,
-    managerName: '张三',
-    status: 1,
-    createdAt: '2024-01-01',
-    children: [
-      {
-        id: 2,
-        name: '技术部',
-        parentId: 1,
-        code: 'TECH',
-        level: 2,
-        managerId: 2,
-        managerName: '李四',
-        status: 1,
-        createdAt: '2024-01-02',
-        children: [
-          {
-            id: 3,
-            name: '前端开发组',
-            parentId: 2,
-            code: 'FRONTEND',
-            level: 3,
-            managerId: 3,
-            managerName: '王五',
-            status: 1,
-            createdAt: '2024-01-03',
-            children: []
-          },
-          {
-            id: 4,
-            name: '后端开发组',
-            parentId: 2,
-            code: 'BACKEND',
-            level: 3,
-            managerId: 4,
-            managerName: '赵六',
-            status: 1,
-            createdAt: '2024-01-04',
-            children: []
-          }
-        ]
-      },
-      {
-        id: 5,
-        name: '市场部',
-        parentId: 1,
-        code: 'MARKET',
-        level: 2,
-        managerId: 5,
-        managerName: '孙七',
-        status: 1,
-        createdAt: '2024-01-05',
-        children: []
-      }
-    ]
-  }
-])
-
-// 模拟用户数据
-const userList = ref([
-  {
-    id: 1,
-    organizationId: 1,
-    username: 'zhangsan',
-    email: 'zhangsan@company.com',
-    realName: '张三',
-    avatarUrl: '',
-    phone: '13800138000',
-    position: '总经理',
-    status: 1,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: 2,
-    organizationId: 2,
-    username: 'lisi',
-    email: 'lisi@company.com',
-    realName: '李四',
-    avatarUrl: '',
-    phone: '13800138001',
-    position: '技术总监',
-    status: 1,
-    createdAt: '2024-01-02'
-  },
-  {
-    id: 3,
-    organizationId: 3,
-    username: 'wangwu',
-    email: 'wangwu@company.com',
-    realName: '王五',
-    avatarUrl: '',
-    phone: '13800138002',
-    position: '前端工程师',
-    status: 1,
-    createdAt: '2024-01-03'
-  }
-])
-
-// 组织树数据
-const organizationTree = computed(() => {
-  // 这里可以根据搜索条件过滤数据
-  if (!searchKeyword.value && filterStatus.value === '' && filterLevel.value === '') {
-    return organizationList.value
-  }
-  
-  // 简单的过滤逻辑
-  return filterOrganizations(organizationList.value)
-})
-
-// 组织选项（用于选择父组织）
-const organizationOptions = computed(() => {
-  const options = []
-  const traverse = (orgs) => {
-    orgs.forEach(org => {
-      options.push({
-        id: org.id,
-        name: org.name,
-        children: org.children ? traverse(org.children) : []
-      })
-    })
-    return options
-  }
-  traverse(organizationList.value)
-  return options
-})
-
-// 负责人选项
-const managerOptions = computed(() => {
-  return userList.value.filter(user => user.status === 1)
-})
-
-// 组织用户列表
-const orgUsers = ref([])
-
 // 树形控件配置
 const treeProps = {
-  label: 'name',
   children: 'children',
-  class: (data, node) => {
-    return node.level === 1 ? 'top-level' : ''
-  }
+  label: 'orgName',
+  value: 'orgId'
 }
 
 // 方法
+const loadOrganizations = async (pageNum = 1, pageSizeParam = 100) => {
+  loading.value = true
+  try {
+    console.log('加载组织数据，参数:', { pageNum, pageSize: pageSizeParam })
+    
+    // 使用基本分页参数获取数据（后端不支持搜索参数）
+    const response = await organizationApi.getOrganizationPage(pageNum, pageSizeParam)
+    
+    if (response.code === 200 && response.data) {
+              console.log('组织数据加载成功:', response.data)
+              // 处理分页数据
+              const { records, total, current, size } = response.data
+              
+              // 转换后端数据为树形结构（适配实际的API字段名）
+              const treeData = buildTreeStructure(records || [])
+              
+              // 存储所有数据用于前端搜索
+              if (pageNum === 1) {
+                allOrganizationData.value = treeData
+              } else {
+                allOrganizationData.value = [...allOrganizationData.value, ...treeData]
+              }
+              
+              // 如果是第一页，直接替换数据
+              if (pageNum === 1) {
+                organizationList.value = treeData
+                totalCount.value = total || records?.length || 0
+                currentPage.value = current || 1
+                pageSize.value = size || pageSize.value
+              } else {
+                // 如果是后续页面，追加数据（适用于树形结构的懒加载）
+                organizationList.value = [...organizationList.value, ...treeData]
+              }
+              
+              ElMessage.success(`组织架构数据加载成功，共${total || records?.length || 0}条记录`)
+            } else {
+              ElMessage.error(response.message || '加载组织架构数据失败')
+            }
+  } catch (error) {
+    console.error('加载组织架构失败:', error)
+    console.error('错误详情:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    })
+    ElMessage.error('加载组织架构失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 构建树形结构（适配实际的API字段名）
+const buildTreeStructure = (data) => {
+  const map = {}
+  const result = []
+  
+  // 创建映射（使用实际的字段名）
+  data.forEach(item => {
+    map[item.id] = { 
+      ...item, 
+      // 映射字段名以适配前端组件
+      orgId: item.id,
+      orgName: item.name,
+      orgCode: item.code,
+      leaderName: item.managerId ? `用户${item.managerId}` : '未设置',
+      children: [] 
+    }
+  })
+  
+  // 构建树形结构
+  data.forEach(item => {
+    const node = map[item.id]
+    if (item.parentId && map[item.parentId]) {
+      map[item.parentId].children.push(node)
+    } else if (!item.parentId) {
+      result.push(node)
+    }
+  })
+  
+  return result
+}
+
+// 前端过滤树形数据
+const filterTreeData = () => {
+  if (!searchKeyword.value) {
+    organizationList.value = allOrganizationData.value
+    return
+  }
+  
+  const keyword = searchKeyword.value.toLowerCase()
+  
+  const filterNode = (node) => {
+    // 检查当前节点是否匹配
+    const matchCurrent = node.orgName.toLowerCase().includes(keyword) || 
+                        node.orgCode.toLowerCase().includes(keyword)
+    
+    // 检查子节点是否匹配
+    const matchChildren = node.children && node.children.some(child => filterNode(child))
+    
+    // 如果当前节点或子节点匹配，则保留该节点
+    if (matchCurrent || matchChildren) {
+      return {
+        ...node,
+        children: node.children ? node.children.filter(child => filterNode(child)) : []
+      }
+    }
+    
+    return null
+  }
+  
+  // 过滤数据
+  const filteredData = allOrganizationData.value
+    .map(node => filterNode(node))
+    .filter(node => node !== null)
+  
+  organizationList.value = filteredData
+}
+
+// 搜索处理
 const handleSearch = () => {
-  // 搜索逻辑
-  console.log('搜索:', searchKeyword.value)
+  console.log('搜索关键词:', searchKeyword.value)
+  // 由于后端不支持搜索参数，使用前端过滤
+  if (searchKeyword.value) {
+    filterTreeData()
+  } else {
+    // 如果搜索词为空，重新加载所有数据
+    loadOrganizations(1, pageSize.value)
+  }
 }
 
+// 筛选处理
 const handleFilter = () => {
-  // 筛选逻辑
-  console.log('筛选状态:', filterStatus.value, '层级:', filterLevel.value)
+  // 由于后端不支持筛选参数，重新加载数据
+  loadOrganizations(1, pageSize.value)
 }
 
+// 重置筛选
 const resetFilter = () => {
   searchKeyword.value = ''
   filterStatus.value = ''
   filterLevel.value = ''
+  handleFilter()
 }
 
-const filterOrganizations = (orgs) => {
-  return orgs.filter(org => {
-    let match = true
-    
-    if (searchKeyword.value) {
-      match = match && (org.name.includes(searchKeyword.value) || org.code?.includes(searchKeyword.value))
-    }
-    
-    if (filterStatus.value !== '') {
-      match = match && org.status === filterStatus.value
-    }
-    
-    if (filterLevel.value !== '') {
-      match = match && org.level === filterLevel.value
-    }
-    
-    return match
-  }).map(org => ({
-    ...org,
-    children: org.children ? filterOrganizations(org.children) : []
-  }))
+// 树节点过滤
+const filterNode = (value, data) => {
+  if (!value) return true
+  return data.orgName.toLowerCase().includes(value.toLowerCase()) ||
+         data.orgCode.toLowerCase().includes(value.toLowerCase())
 }
 
+// 节点点击处理
+const handleNodeClick = (data) => {
+  console.log('点击节点:', data)
+}
+
+// 展开全部
 const expandAll = () => {
-  const keys = []
-  const getAllKeys = (nodes) => {
-    nodes.forEach(node => {
-      keys.push(node.id)
-      if (node.children && node.children.length > 0) {
-        getAllKeys(node.children)
-      }
-    })
-  }
-  getAllKeys(organizationList.value)
-  expandedKeys.value = keys
+  const nodes = treeRef.value?.store._getAllNodes() || []
+  nodes.forEach(node => {
+    node.expand()
+  })
 }
 
+// 收起全部
 const collapseAll = () => {
-  expandedKeys.value = []
+  const nodes = treeRef.value?.store._getAllNodes() || []
+  nodes.forEach(node => {
+    node.collapse()
+  })
 }
 
-const handleNodeClick = (data, node) => {
-  console.log('点击节点:', data, node)
-}
-
-const handleAddChild = (parentOrg) => {
-  currentOrg.value = parentOrg
-  orgForm.parentId = parentOrg.id
-  isEdit.value = false
+// 显示添加子组织对话框
+const showAddChildDialog = (parentOrg) => {
+  editingOrg.value = null
+  orgForm.parentId = parentOrg.orgId
   showAddDialog.value = true
 }
 
-const handleEdit = (org) => {
+// 显示编辑对话框
+const showEditDialog = (org) => {
+  editingOrg.value = org
+  Object.assign(orgForm, org)
+  showAddDialog.value = true
+}
+
+// 显示成员对话框
+const showUsersDialog = async (org) => {
   currentOrg.value = org
-  currentNode.value = org
-  
-  // 填充表单数据
-  orgForm.id = org.id
-  orgForm.parentId = org.parentId
-  orgForm.name = org.name
-  orgForm.code = org.code
-  orgForm.managerId = org.managerId
-  orgForm.status = org.status
-  orgForm.remark = org.remark || ''
-  
-  isEdit.value = true
-  showAddDialog.value = true
+  showUsersDialogFlag.value = true
+  await loadOrgUsers(org.orgId)
 }
 
-const handleToggleStatus = async (org) => {
+// 加载组织成员
+const loadOrgUsers = async (orgId) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要${org.status === 1 ? '禁用' : '启用'}组织 "${org.name}" 吗？`,
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    
-    // 模拟API调用
-    org.status = org.status === 1 ? 0 : 1
-    ElMessage.success(`${org.status === 1 ? '启用' : '禁用'}成功`)
+    const response = await organizationApi.getOrgUsers(orgId)
+    if (response.code === 200) {
+      currentOrgUsers.value = response.data || []
+    } else {
+      ElMessage.error(response.message || '加载组织成员失败')
+    }
   } catch (error) {
-    console.log('取消操作')
+    console.error('加载组织成员失败:', error)
+    ElMessage.error('加载组织成员失败')
   }
 }
 
-const handleViewUsers = (org) => {
-  currentOrg.value = org
-  loadOrgUsers(org.id)
-  showUsersDialog.value = true
-}
-
-const loadOrgUsers = (orgId) => {
-  usersLoading.value = true
-  
-  // 模拟API调用
-  setTimeout(() => {
-    orgUsers.value = userList.value.filter(user => user.organizationId === orgId)
-    usersLoading.value = false
-  }, 500)
-}
-
+// 移除用户
 const removeUserFromOrg = async (user) => {
   try {
     await ElMessageBox.confirm(
-      `确定要将用户 "${user.realName || user.username}" 从组织中移除吗？`,
+      `确定要移除成员 "${user.userName}" 吗？`,
       '提示',
       {
         confirmButtonText: '确定',
@@ -582,113 +548,106 @@ const removeUserFromOrg = async (user) => {
       }
     )
     
-    // 模拟API调用
-    const index = userList.value.findIndex(u => u.id === user.id)
-    if (index > -1) {
-      userList.value[index].organizationId = null
+    const response = await organizationApi.removeOrgUser(currentOrg.value.orgId, user.userId)
+    if (response.code === 200) {
+      ElMessage.success('移除成功')
+      await loadOrgUsers(currentOrg.value.orgId)
+    } else {
+      ElMessage.error(response.message || '移除失败')
     }
-    
-    ElMessage.success('移除成功')
-    loadOrgUsers(currentOrg.value.id)
   } catch (error) {
-    console.log('取消操作')
+    if (error !== 'cancel') {
+      console.error('移除成员失败:', error)
+      ElMessage.error('移除失败')
+    }
   }
 }
 
-const submitForm = async () => {
+// 切换状态
+const toggleStatus = async (org) => {
   try {
-    const valid = await orgFormRef.value.validate()
-    if (!valid) return
-    
-    isSubmitting.value = true
-    
-    // 模拟API调用
-    setTimeout(() => {
-      if (isEdit.value) {
-        // 编辑模式
-        const org = findOrganizationById(organizationList.value, orgForm.id)
-        if (org) {
-          Object.assign(org, {
-            name: orgForm.name,
-            code: orgForm.code,
-            managerId: orgForm.managerId,
-            managerName: managerOptions.value.find(m => m.id === orgForm.managerId)?.realName,
-            status: orgForm.status,
-            remark: orgForm.remark
-          })
-        }
-        ElMessage.success('组织信息更新成功')
-      } else {
-        // 新增模式
-        const newOrg = {
-          id: Date.now(),
-          name: orgForm.name,
-          parentId: orgForm.parentId,
-          code: orgForm.code,
-          level: orgForm.parentId ? getOrganizationLevel(orgForm.parentId) + 1 : 1,
-          managerId: orgForm.managerId,
-          managerName: managerOptions.value.find(m => m.id === orgForm.managerId)?.realName,
-          status: orgForm.status,
-          remark: orgForm.remark,
-          createdAt: new Date().toISOString().split('T')[0],
-          children: []
-        }
-        
-        if (orgForm.parentId) {
-          const parent = findOrganizationById(organizationList.value, orgForm.parentId)
-          if (parent) {
-            parent.children.push(newOrg)
-          }
-        } else {
-          organizationList.value.push(newOrg)
-        }
-        
-        ElMessage.success('组织创建成功')
+    await ElMessageBox.confirm(
+      `确定要${org.status === 1 ? '禁用' : '启用'}组织 "${org.orgName}" 吗？`,
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }
-      
+    )
+    
+    const newStatus = org.status === 1 ? 0 : 1
+    const response = await organizationApi.updateOrganization({
+      orgId: org.orgId,
+      status: newStatus
+    })
+    
+    if (response.code === 200) {
+      org.status = newStatus
+      ElMessage.success(`${newStatus === 1 ? '启用' : '禁用'}成功`)
+    } else {
+      ElMessage.error(response.message || '操作失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('切换状态失败:', error)
+      ElMessage.error('操作失败')
+    }
+  }
+}
+
+// 保存组织
+const saveOrganization = async () => {
+  try {
+    const response = editingOrg.value
+      ? await organizationApi.updateOrganization({ ...orgForm, orgId: editingOrg.value.orgId })
+      : await organizationApi.createOrganization(orgForm)
+    
+    if (response.code === 200) {
+      ElMessage.success(editingOrg.value ? '更新成功' : '创建成功')
       showAddDialog.value = false
       resetForm()
-      isSubmitting.value = false
-    }, 1000)
-  } catch (error) {
-    console.error('表单验证失败:', error)
-  }
-}
-
-const resetForm = () => {
-  orgForm.id = null
-  orgForm.parentId = null
-  orgForm.name = ''
-  orgForm.code = ''
-  orgForm.managerId = null
-  orgForm.status = 1
-  orgForm.remark = ''
-  
-  currentOrg.value = null
-  currentNode.value = null
-  isEdit.value = false
-}
-
-const findOrganizationById = (orgs, id) => {
-  for (const org of orgs) {
-    if (org.id === id) return org
-    if (org.children && org.children.length > 0) {
-      const found = findOrganizationById(org.children, id)
-      if (found) return found
+      loadOrganizations(currentPage.value, pageSize.value)
+    } else {
+      ElMessage.error(response.message || '操作失败')
     }
+  } catch (error) {
+    console.error('保存组织失败:', error)
+    ElMessage.error('保存失败')
   }
-  return null
 }
 
-const getOrganizationLevel = (parentId) => {
-  const parent = findOrganizationById(organizationList.value, parentId)
-  return parent ? parent.level : 0
+// 重置表单
+const resetForm = () => {
+  editingOrg.value = null
+  Object.assign(orgForm, {
+    orgName: '',
+    orgCode: '',
+    parentId: null,
+    leaderName: '',
+    phone: '',
+    email: '',
+    sortOrder: 0,
+    status: 1,
+    remark: ''
+  })
+}
+
+// 分页处理
+const handlePageChange = (page) => {
+  currentPage.value = page
+  loadOrganizations(page, pageSize.value)
+}
+
+const handlePageSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadOrganizations(1, size)
 }
 
 // 生命周期
 onMounted(() => {
-  // 默认展开顶级组织
-  expandedKeys.value = [1]
+  loadOrganizations() // 加载组织架构数据
 })
 </script>
 
@@ -868,5 +827,14 @@ onMounted(() => {
     flex-direction: column;
     gap: 8px;
   }
+}
+
+/* 分页样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 20px 0;
+  border-top: 1px solid #e4e7ed;
 }
 </style>

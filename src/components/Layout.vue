@@ -49,6 +49,10 @@
             <el-icon><Key /></el-icon>
             <span>角色管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/api-test">
+            <el-icon><Tools /></el-icon>
+            <span>API测试</span>
+          </el-menu-item>
         </el-sub-menu>
       </el-menu>
     </div>
@@ -89,7 +93,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useActivityStore } from '../stores/activity'
-import { House, List, Star, TrendCharts, Document, Setting, OfficeBuilding, User, Key } from '@element-plus/icons-vue'
+import { House, List, Star, TrendCharts, Document, Setting, OfficeBuilding, User, Key, Tools } from '@element-plus/icons-vue'
 
 const store = useActivityStore()
 const unreadNotifications = computed(() => store.unreadNotifications)
