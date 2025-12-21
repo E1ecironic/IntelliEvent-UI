@@ -65,13 +65,27 @@ export default {
   },
 
   /**
-   * 分页获取组织架构
+   * 分页获取组织架构（支持搜索和筛选）
    */
-  getOrganizationPage(pageNum = 1, pageSize = 10) {
-    return request.get('/organizations/page', {
+  getOrganizationPage(pageNum = 1, pageSize = 10, name = '', level = null, status = null) {
+    const data = {
       pageNum,
       pageSize
-    })
+    }
+    
+    // 如果提供了搜索名称，添加到参数中
+    if (name && name.trim() !== '') {
+      data.name = name.trim()
+    }
+    
+    // 如果提供了状态，添加到参数中
+    if (status !== null && status !== undefined && status !== '') {
+      data.status = status
+    }
+    
+    console.log('API请求参数:', data)
+    // 使用POST请求，参数通过JSON传递
+    return request.post('/organizations/page', data)
   },
 
   /**
