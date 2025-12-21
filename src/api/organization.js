@@ -67,7 +67,7 @@ export default {
   /**
    * 分页获取组织架构（支持搜索和筛选）
    */
-  getOrganizationPage(pageNum = 1, pageSize = 10, name = '', level = null, status = null) {
+  getOrganizationPage(pageNum = 1, pageSize = 10, name = '', level = null, status = null, code = '') {
     const data = {
       pageNum,
       pageSize
@@ -76,6 +76,11 @@ export default {
     // 如果提供了搜索名称，添加到参数中
     if (name && name.trim() !== '') {
       data.name = name.trim()
+    }
+    
+    // 如果提供了搜索编码，添加到参数中
+    if (code && code.trim() !== '') {
+      data.code = code.trim()
     }
     
     // 如果提供了状态，添加到参数中

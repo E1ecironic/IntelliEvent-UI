@@ -8,7 +8,7 @@
           <p class="subtitle">管理系统用户，支持组织架构关联和角色权限分配</p>
         </div>
         <div class="header-actions">
-          <el-button type="primary" @click="showAddDialog = true">
+          <el-button type="primary" @click="handleAddUser">
             <el-icon><Plus /></el-icon>
             新增用户
           </el-button>
@@ -26,58 +26,107 @@
 
     <!-- 搜索和筛选 -->
     <el-card class="filter-card">
-      <el-row :gutter="20" align="middle">
-        <el-col :span="6">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索用户名、姓名或邮箱"
-            clearable
-            @input="handleSearch"
-          >
-            <template #prefix>
+      <el-row :gutter="16" align="middle">
+        <el-col :span="5">
+          <div class="search-item">
+            <label class="search-label">用户名</label>
+            <el-input
+              v-model="searchUsername"
+              placeholder="请输入用户名"
+              clearable
+              @input="handleSearch"
+              size="default"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="5">
+          <div class="search-item">
+            <label class="search-label">真实姓名</label>
+            <el-input
+              v-model="searchRealName"
+              placeholder="请输入真实姓名"
+              clearable
+              @input="handleSearch"
+              size="default"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="5">
+          <div class="search-item">
+            <label class="search-label">邮箱</label>
+            <el-input
+              v-model="searchEmail"
+              placeholder="请输入邮箱"
+              clearable
+              @input="handleSearch"
+              size="default"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="4">
+          <div class="search-item">
+            <label class="search-label">组织架构</label>
+            <el-select v-model="filterOrg" placeholder="全部组织" clearable @change="handleFilter" size="default">
+              <el-option
+                v-for="org in organizationOptions"
+                :key="org.id"
+                :label="org.name"
+                :value="org.id"
+              />
+            </el-select>
+          </div>
+        </el-col>
+        <el-col :span="3">
+          <div class="search-item">
+            <label class="search-label">状态</label>
+            <el-select v-model="filterStatus" placeholder="全部状态" clearable @change="handleFilter" size="default">
+              <el-option label="正常" :value="1" />
+              <el-option label="禁用" :value="0" />
+              <el-option label="待激活" :value="2" />
+            </el-select>
+          </div>
+        </el-col>
+        <el-col :span="3">
+          <div class="search-actions">
+            <el-button type="primary" @click="handleAdvancedSearch" size="default">
               <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filterOrg" placeholder="组织架构" clearable @change="handleFilter">
-            <el-option label="全部组织" value="" />
-            <el-option
-              v-for="org in organizationOptions"
-              :key="org.id"
-              :label="org.name"
-              :value="org.id"
-            />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filterRole" placeholder="角色" clearable @change="handleFilter">
-            <el-option label="全部角色" value="" />
-            <el-option
-              v-for="role in roleOptions"
-              :key="role.id"
-              :label="role.name"
-              :value="role.id"
-            />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filterStatus" placeholder="状态" clearable @change="handleFilter">
-            <el-option label="全部状态" value="" />
-            <el-option label="正常" :value="1" />
-            <el-option label="禁用" :value="0" />
-            <el-option label="待激活" :value="2" />
-          </el-select>
-        </el-col>
-        <el-col :span="6">
-          <el-button @click="resetFilter">重置</el-button>
-          <el-button type="primary" @click="handleAdvancedSearch">高级搜索</el-button>
+              搜索
+            </el-button>
+            <el-button @click="resetFilter" size="default">重置</el-button>
+          </div>
         </el-col>
       </el-row>
     </el-card>
 
     <!-- 用户列表 -->
     <el-card class="content-card">
+      <div class="batch-actions" v-if="selectedUsers.length > 0">
+        <el-button type="danger" @click="handleBatchDelete" size="small">
+          <el-icon><Delete /></el-icon>
+          批量删除
+        </el-button>
+        <el-button type="success" @click="handleBatchStatusUpdate(1)" size="small">
+          <el-icon><Switch /></el-icon>
+          批量启用
+        </el-button>
+        <el-button type="warning" @click="handleBatchStatusUpdate(0)" size="small">
+          <el-icon><Switch /></el-icon>
+          批量禁用
+        </el-button>
+        <span class="selected-count">已选择 {{ selectedUsers.length }} 个用户</span>
+      </div>
       <div class="table-container">
         <el-table
           ref="userTableRef"
@@ -147,19 +196,19 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
+          <el-table-column label="操作" width="240" fixed="right">
             <template #default="{ row }">
               <div class="action-buttons">
-                <el-button type="primary" link @click="handleEdit(row)">
+                <el-button type="primary" link @click="handleEdit(row)" size="small">
                   <el-icon><Edit /></el-icon>
                   编辑
                 </el-button>
-                <el-button type="warning" link @click="handleAssignRole(row)">
+                <el-button type="warning" link @click="handleAssignRole(row)" size="small">
                   <el-icon><User /></el-icon>
-                  分配角色
+                  角色
                 </el-button>
-                <el-dropdown @command="(command) => handleCommand(command, row)">
-                  <el-button type="info" link>
+                <el-dropdown @command="(command) => handleCommand(command, row)" placement="bottom-end">
+                  <el-button type="info" link size="small">
                     <el-icon><MoreFilled /></el-icon>
                     更多
                   </el-button>
@@ -262,11 +311,17 @@
             action="/api/upload/avatar"
             :show-file-list="false"
             :on-success="handleAvatarSuccess"
+            :on-error="handleAvatarError"
+            :on-change="handleAvatarChange"
             :before-upload="beforeAvatarUpload"
+            accept="image/*"
           >
             <img v-if="userForm.avatarUrl" :src="userForm.avatarUrl" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
+          <div class="avatar-tips">
+            <el-text type="info" size="small">支持 JPG、PNG、GIF 格式，大小不超过 2MB</el-text>
+          </div>
         </el-form-item>
         <el-form-item label="个人设置" prop="settings">
           <el-input
@@ -367,6 +422,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import userApi from '@/api/user'
+import organizationApi from '@/api/organization'
 import {
   Search,
   Plus,
@@ -382,13 +439,15 @@ import {
 } from '@element-plus/icons-vue'
 
 // 搜索和筛选
-const searchKeyword = ref('')
+const searchUsername = ref('')
+const searchRealName = ref('')
+const searchEmail = ref('')
 const filterOrg = ref('')
-const filterRole = ref('')
 const filterStatus = ref('')
 
 // 表格和分页
 const userTableRef = ref()
+const userFormRef = ref()
 const tableLoading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -412,7 +471,6 @@ const userForm = reactive({
   organizationId: null,
   username: '',
   email: '',
-  passwordHash: '',
   realName: '',
   avatarUrl: '',
   phone: '',
@@ -446,28 +504,13 @@ const userRules = {
   ]
 }
 
-// 模拟组织数据
-const organizationList = ref([
-  {
-    id: 1,
-    name: '总公司',
-    parentId: null,
-    children: [
-      {
-        id: 2,
-        name: '技术部',
-        parentId: 1,
-        children: []
-      },
-      {
-        id: 3,
-        name: '市场部',
-        parentId: 1,
-        children: []
-      }
-    ]
-  }
-])
+// 用户数据
+const userList = ref([])
+const allUserData = ref([]) // 存储所有用户数据用于前端筛选
+
+// 组织数据
+const organizationList = ref([])
+const organizationMap = ref(new Map()) // 组织ID到名称的映射
 
 // 模拟角色数据
 const roleList = ref([
@@ -551,42 +594,6 @@ const userData = ref([
 ])
 
 // 计算属性
-const userList = computed(() => {
-  // 这里可以根据搜索条件过滤数据
-  let filteredUsers = userData.value
-  
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    filteredUsers = filteredUsers.filter(user => 
-      user.username.toLowerCase().includes(keyword) ||
-      user.realName.toLowerCase().includes(keyword) ||
-      user.email.toLowerCase().includes(keyword)
-    )
-  }
-  
-  if (filterOrg.value) {
-    filteredUsers = filteredUsers.filter(user => user.organizationId === filterOrg.value)
-  }
-  
-  if (filterRole.value) {
-    const userIds = userRoleList.value
-      .filter(ur => ur.roleId === filterRole.value)
-      .map(ur => ur.userId)
-    filteredUsers = filteredUsers.filter(user => userIds.includes(user.id))
-  }
-  
-  if (filterStatus.value !== '') {
-    filteredUsers = filteredUsers.filter(user => user.status === filterStatus.value)
-  }
-  
-  // 分页
-  totalUsers.value = filteredUsers.length
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  
-  return filteredUsers.slice(start, end)
-})
-
 const organizationOptions = computed(() => {
   const options = []
   const traverse = (orgs) => {
@@ -603,30 +610,102 @@ const organizationOptions = computed(() => {
   return options
 })
 
+// 方法
+const loadUsers = async () => {
+  tableLoading.value = true
+  try {
+    console.log('加载用户数据，参数:', {
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+      username: searchUsername.value,
+      realName: searchRealName.value,
+      email: searchEmail.value,
+      status: filterStatus.value,
+      organizationId: filterOrg.value
+    })
+    
+    const response = await userApi.getUserPage(
+      currentPage.value,
+      pageSize.value,
+      searchUsername.value,
+      searchRealName.value,
+      searchEmail.value,
+      filterStatus.value,
+      filterOrg.value
+    )
+    
+    if (response.code === 200 && response.data) {
+      console.log('用户数据加载成功:', response.data)
+      const { records, total } = response.data
+      userList.value = records || []
+      totalUsers.value = total || 0
+      
+      // 存储所有数据用于前端筛选
+      allUserData.value = records || []
+    } else {
+      ElMessage.error(response.message || '加载用户数据失败')
+      userList.value = []
+      totalUsers.value = 0
+    }
+  } catch (error) {
+    console.error('加载用户数据失败:', error)
+    ElMessage.error('加载用户数据失败')
+    userList.value = []
+    totalUsers.value = 0
+  } finally {
+    tableLoading.value = false
+  }
+}
+
 const roleOptions = computed(() => roleList.value)
 
 // 方法
+const loadOrganizations = async () => {
+  try {
+    const response = await organizationApi.getOrganizationPage(1, 100) // 获取所有组织数据
+    if (response.code === 200 && response.data) {
+      const { records } = response.data
+      organizationList.value = records || []
+      
+      // 构建组织ID到名称的映射
+      const buildOrgMap = (orgs) => {
+        orgs.forEach(org => {
+          organizationMap.value.set(org.id, org.name)
+          if (org.children && org.children.length > 0) {
+            buildOrgMap(org.children)
+          }
+        })
+      }
+      buildOrgMap(organizationList.value)
+    }
+  } catch (error) {
+    console.error('加载组织数据失败:', error)
+  }
+}
+
 const handleSearch = () => {
   currentPage.value = 1
-  console.log('搜索:', searchKeyword.value)
+  loadUsers()
 }
 
 const handleFilter = () => {
   currentPage.value = 1
-  console.log('筛选条件变更')
+  loadUsers()
 }
 
 const handleAdvancedSearch = () => {
-  // 高级搜索逻辑
-  console.log('高级搜索')
+  currentPage.value = 1
+  loadUsers()
 }
 
 const resetFilter = () => {
-  searchKeyword.value = ''
+  searchUsername.value = ''
+  searchRealName.value = ''
+  searchEmail.value = ''
   filterOrg.value = ''
-  filterRole.value = ''
   filterStatus.value = ''
   currentPage.value = 1
+  loadUsers()
 }
 
 const handleSelectionChange = (selection) => {
@@ -636,6 +715,86 @@ const handleSelectionChange = (selection) => {
 const handleBatchImport = () => {
   // 批量导入逻辑
   console.log('批量导入')
+}
+
+const handleBatchDelete = async () => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning('请选择要删除的用户')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedUsers.value.length} 个用户吗？此操作不可恢复。`,
+      '批量删除用户',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'error'
+      }
+    )
+    
+    // 获取选中的用户ID
+    const userIds = selectedUsers.value.map(user => user.id)
+    
+    // 调用批量删除API
+    const response = await userApi.batchDeleteUsers(userIds)
+    
+    if (response.code === 200) {
+      ElMessage.success(`成功删除 ${userIds.length} 个用户`)
+      loadUsers() // 刷新用户列表
+      selectedUsers.value = [] // 清空选择
+    } else {
+      ElMessage.error(response.message || '批量删除失败')
+    }
+  } catch (error) {
+    console.log('取消批量删除')
+  }
+}
+
+const handleBatchStatusUpdate = async (status) => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning('请选择要更新状态的用户')
+    return
+  }
+  
+  const statusText = status === 1 ? '启用' : '禁用'
+  const statusType = status === 1 ? 'success' : 'warning'
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要${statusText}选中的 ${selectedUsers.value.length} 个用户吗？`,
+      `批量${statusText}用户`,
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: statusType
+      }
+    )
+    
+    // 获取选中的用户ID
+    const userIds = selectedUsers.value.map(user => user.id)
+    
+    // 调用批量状态更新API
+    const response = await userApi.batchUpdateStatus(userIds, status)
+    
+    if (response.code === 200) {
+      ElMessage.success(`成功${statusText} ${userIds.length} 个用户`)
+      loadUsers() // 刷新用户列表
+      selectedUsers.value = [] // 清空选择
+    } else {
+      ElMessage.error(response.message || '批量状态更新失败')
+    }
+  } catch (error) {
+    console.log('取消批量状态更新')
+  }
+}
+
+const handleAddUser = () => {
+  currentUser.value = null
+  isEdit.value = false
+  resetForm()
+  showAddDialog.value = true
 }
 
 const handleExport = () => {
@@ -662,6 +821,38 @@ const handleEdit = (user) => {
   })
   
   showAddDialog.value = true
+}
+
+const submitForm = async () => {
+  try {
+    await userFormRef.value.validate()
+    isSubmitting.value = true
+    
+    let response
+    if (isEdit.value) {
+      // 编辑用户
+      response = await userApi.updateUser(userForm.id, userForm)
+    } else {
+      // 新增用户
+      response = await userApi.createUser(userForm)
+    }
+    
+    if (response.code === 200) {
+      ElMessage.success(isEdit.value ? '用户更新成功' : '用户创建成功')
+      showAddDialog.value = false
+      resetForm()
+      loadUsers() // 刷新用户列表
+    } else {
+      ElMessage.error(response.message || (isEdit.value ? '用户更新失败' : '用户创建失败'))
+    }
+  } catch (error) {
+    console.error('表单提交失败:', error)
+    if (error !== false) { // 如果不是验证错误
+      ElMessage.error(isEdit.value ? '用户更新失败' : '用户创建失败')
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const handleAssignRole = (user) => {
@@ -705,9 +896,14 @@ const handleResetPassword = async (user) => {
       }
     )
     
-    // 模拟API调用
-    console.log('重置密码:', user.id)
-    ElMessage.success('密码重置成功，新密码已发送至用户邮箱')
+    // 调用API重置密码 - 不传新密码，由后端生成随机密码
+    const response = await userApi.resetPassword(user.id)
+    
+    if (response.code === 200) {
+      ElMessage.success('密码重置成功，新密码已发送至用户邮箱')
+    } else {
+      ElMessage.error(response.message || '密码重置失败')
+    }
   } catch (error) {
     console.log('取消重置')
   }
@@ -730,9 +926,16 @@ const handleToggleStatus = async (user) => {
       }
     )
     
-    // 模拟API调用
-    user.status = user.status === 1 ? 0 : 1
-    ElMessage.success(`${user.status === 1 ? '启用' : '禁用'}成功`)
+    // 调用API更新用户状态
+    const newStatus = user.status === 1 ? 0 : 1
+    const response = await userApi.updateUser(user.id, { status: newStatus })
+    
+    if (response.code === 200) {
+      user.status = newStatus // 更新本地状态
+      ElMessage.success(`${newStatus === 1 ? '启用' : '禁用'}成功`)
+    } else {
+      ElMessage.error(response.message || '状态更新失败')
+    }
   } catch (error) {
     console.log('取消操作')
   }
@@ -750,13 +953,15 @@ const handleDelete = async (user) => {
       }
     )
     
-    // 模拟API调用
-    const index = userData.value.findIndex(u => u.id === user.id)
-    if (index > -1) {
-      userData.value.splice(index, 1)
-    }
+    // 调用API删除用户
+    const response = await userApi.deleteUser(user.id)
     
-    ElMessage.success('用户删除成功')
+    if (response.code === 200) {
+      ElMessage.success('用户删除成功')
+      loadUsers() // 刷新用户列表
+    } else {
+      ElMessage.error(response.message || '用户删除失败')
+    }
   } catch (error) {
     console.log('取消删除')
   }
@@ -764,12 +969,12 @@ const handleDelete = async (user) => {
 
 const handleSizeChange = (size) => {
   pageSize.value = size
-  console.log('每页显示:', size)
+  loadUsers()
 }
 
 const handleCurrentChange = (page) => {
   currentPage.value = page
-  console.log('当前页:', page)
+  loadUsers()
 }
 
 const selectAllRoles = () => {
@@ -873,7 +1078,25 @@ const getAvatarColor = (username) => {
 }
 
 const handleAvatarSuccess = (response, file) => {
-  userForm.avatarUrl = URL.createObjectURL(file.raw)
+  if (response.code === 200 && response.data) {
+    // 使用后端返回的URL
+    userForm.avatarUrl = response.data.url || response.data.avatarUrl
+    ElMessage.success('头像上传成功')
+  } else {
+    // 如果后端没有返回URL，使用本地预览
+    userForm.avatarUrl = URL.createObjectURL(file.raw)
+    ElMessage.warning('头像上传成功，但未能获取到服务器URL')
+  }
+}
+
+const handleAvatarChange = (file) => {
+  // 文件选择改变时的处理
+  console.log('头像文件选择:', file)
+}
+
+const handleAvatarError = (error) => {
+  console.error('头像上传失败:', error)
+  ElMessage.error('头像上传失败，请稍后重试')
 }
 
 const beforeAvatarUpload = (file) => {
@@ -893,7 +1116,8 @@ const beforeAvatarUpload = (file) => {
 
 // 生命周期
 onMounted(() => {
-  totalUsers.value = userData.value.length
+  loadOrganizations()
+  loadUsers()
 })
 </script>
 
@@ -933,6 +1157,31 @@ onMounted(() => {
   border-radius: 8px;
   margin-bottom: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-label {
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.search-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 20px; /* 对齐标签高度 */
+}
+
+.search-actions .el-button {
+  width: 100%;
+  margin: 0;
 }
 
 .content-card {
@@ -986,14 +1235,57 @@ onMounted(() => {
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.action-buttons .el-button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.action-buttons .el-button [class*="el-icon"] {
+  font-size: 14px;
 }
 
 .pagination-container {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+.batch-actions {
+  padding: 12px 0;
+  border-bottom: 1px solid #e4e7ed;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-count {
+  margin-left: auto;
+  color: #909399;
+  font-size: 14px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .search-item {
+    margin-bottom: 12px;
+  }
+  
+  .search-actions {
+    padding-top: 0;
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .search-actions .el-button {
+    width: auto;
+  }
 }
 
 .role-selection {
@@ -1036,6 +1328,7 @@ onMounted(() => {
   padding: 20px 0;
 }
 
+/* 头像上传样式 */
 .avatar-uploader {
   border: 1px dashed #d9d9d9;
   border-radius: 6px;
@@ -1043,6 +1336,8 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   transition: var(--el-transition-duration-fast);
+  width: 120px;
+  height: 120px;
 }
 
 .avatar-uploader:hover {
@@ -1052,16 +1347,23 @@ onMounted(() => {
 .avatar-uploader-icon {
   font-size: 28px;
   color: #8c939d;
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   text-align: center;
-  line-height: 80px;
+  line-height: 120px;
 }
 
 .avatar {
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   display: block;
+  object-fit: cover;
+}
+
+.avatar-tips {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
 }
 
 /* 响应式布局 */

@@ -21,10 +21,21 @@
     <!-- 搜索和筛选 -->
     <el-card class="filter-card">
       <el-row :gutter="20" align="middle">
-        <el-col :span="8">
+        <el-col :span="6">
           <el-input
-            v-model="searchKeyword"
-            placeholder="搜索组织名称或编码"
+            v-model="searchName"
+            placeholder="搜索组织名称"
+            clearable
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-col>
+        <el-col :span="6">
+          <el-input
+            v-model="searchCode"
+            placeholder="搜索组织编码"
             clearable
           >
             <template #prefix>
@@ -125,6 +136,14 @@
                   <el-icon><SwitchButton /></el-icon>
                   {{ data.status === 1 ? '禁用' : '启用' }}
                 </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click.stop="deleteOrganization(data)"
+                >
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
               </div>
             </div>
           </template>
@@ -167,6 +186,7 @@
             placeholder="请选择上级组织"
             clearable
             :disabled="isAddingSubordinate"
+            check-strictly
           />
           <div v-if="isAddingSubordinate" style="color: #909399; font-size: 12px; margin-top: 5px;">
             提示：正在添加下级组织，上级组织已自动填充且不可修改
@@ -268,7 +288,8 @@ import {
   Phone,
   Location,
   Edit,
-  SwitchButton
+  SwitchButton,
+  Delete
 } from '@element-plus/icons-vue'
 import organizationApi from '../../api/organization'
 
@@ -276,7 +297,8 @@ import organizationApi from '../../api/organization'
 const loading = ref(false)
 const organizationList = ref([])
 const allOrganizationData = ref([]) // 存储所有数据用于前端搜索
-const searchKeyword = ref('')
+const searchName = ref('')
+const searchCode = ref('')
 const filterStatus = ref('')
 const showAddDialog = ref(false)
 const showUsersDialogFlag = ref(false)
@@ -337,10 +359,10 @@ const treeProps = {
 const loadOrganizations = async (pageNum = 1, pageSizeParam = 100) => {
   loading.value = true
   try {
-    console.log('加载组织数据，参数:', { pageNum, pageSize: pageSizeParam, searchKeyword: searchKeyword.value, filterStatus: filterStatus.value })
+    console.log('加载组织数据，参数:', { pageNum, pageSize: pageSizeParam, searchName: searchName.value, searchCode: searchCode.value, filterStatus: filterStatus.value })
     
     // 使用分页参数和搜索条件获取数据（后端现在支持搜索和筛选）
-    const response = await organizationApi.getOrganizationPage(pageNum, pageSizeParam, searchKeyword.value, null, filterStatus.value)
+    const response = await organizationApi.getOrganizationPage(pageNum, pageSizeParam, searchName.value, null, filterStatus.value, searchCode.value)
     
     if (response.code === 200 && response.data) {
               console.log('组织数据加载成功:', response.data)
@@ -413,17 +435,25 @@ const buildTreeStructure = (data) => {
 
 // 前端过滤树形数据
 const filterTreeData = () => {
-  if (!searchKeyword.value) {
+  if (!searchName.value && !searchCode.value) {
     organizationList.value = allOrganizationData.value
     return
   }
   
-  const keyword = searchKeyword.value.toLowerCase()
+  const nameKeyword = searchName.value ? searchName.value.toLowerCase() : ''
+  const codeKeyword = searchCode.value ? searchCode.value.toLowerCase() : ''
   
   const filterNode = (node) => {
-    // 检查当前节点是否匹配
-    const matchCurrent = node.name.toLowerCase().includes(keyword) || 
-                        node.code.toLowerCase().includes(keyword)
+    // 检查当前节点是否匹配名称或编码
+    let matchCurrent = true
+    
+    if (nameKeyword) {
+      matchCurrent = matchCurrent && node.name.toLowerCase().includes(nameKeyword)
+    }
+    
+    if (codeKeyword) {
+      matchCurrent = matchCurrent && node.code.toLowerCase().includes(codeKeyword)
+    }
     
     // 检查子节点是否匹配
     const matchChildren = node.children && node.children.some(child => filterNode(child))
@@ -449,7 +479,7 @@ const filterTreeData = () => {
 
 // 搜索处理
 const handleSearch = () => {
-  console.log('搜索关键词:', searchKeyword.value)
+  console.log('搜索参数:', { name: searchName.value, code: searchCode.value })
   // 后端现在支持搜索参数，重新加载数据
   currentPage.value = 1  // 重置到第一页
   loadOrganizations(1, pageSize.value)
@@ -464,7 +494,8 @@ const handleFilter = () => {
 
 // 重置筛选
 const resetFilter = () => {
-  searchKeyword.value = ''
+  searchName.value = ''
+  searchCode.value = ''
   filterStatus.value = ''
   handleFilter()
 }
@@ -472,8 +503,7 @@ const resetFilter = () => {
 // 树节点过滤
 const filterNode = (value, data) => {
   if (!value) return true
-  return data.name.toLowerCase().includes(value.toLowerCase()) ||
-         data.code.toLowerCase().includes(value.toLowerCase())
+  return data.name.toLowerCase().includes(value.toLowerCase())
 }
 
 // 节点点击处理
@@ -645,6 +675,55 @@ const toggleStatus = async (org) => {
     if (error !== 'cancel') {
       console.error('切换状态失败:', error)
       ElMessage.error('操作失败')
+    }
+  }
+}
+
+// 删除组织
+const deleteOrganization = async (org) => {
+  try {
+    // 计算子组织数量
+    const getChildOrgCount = (node) => {
+      let count = 0
+      if (node.children && node.children.length > 0) {
+        count += node.children.length
+        node.children.forEach(child => {
+          count += getChildOrgCount(child)
+        })
+      }
+      return count
+    }
+    
+    const childCount = getChildOrgCount(org)
+    const deleteWarning = childCount > 0 
+      ? `确定要删除组织 "${org.name}" 吗？\n\n⚠️ 警告：此操作将同时删除该组织下的 ${childCount} 个子组织，此操作不可恢复！`
+      : `确定要删除组织 "${org.name}" 吗？\n\n⚠️ 警告：此操作不可恢复！`
+    
+    await ElMessageBox.confirm(
+      deleteWarning,
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger',
+        dangerouslyUseHTMLString: true
+      }
+    )
+    
+    const response = await organizationApi.deleteOrganization(org.id)
+    
+    if (response.code === 200) {
+      ElMessage.success('删除成功')
+      // 重新加载数据
+      loadOrganizations(currentPage.value, pageSize.value)
+    } else {
+      ElMessage.error(response.message || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除组织失败:', error)
+      ElMessage.error('删除失败')
     }
   }
 }
