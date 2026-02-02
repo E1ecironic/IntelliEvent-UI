@@ -1,5 +1,5 @@
-<script setup>
-import Layout from './components/Layout.vue'
+<script setup lang="ts">
+import Layout from '@/layout/index.vue'
 </script>
 
 <template>
@@ -8,18 +8,7 @@ import Layout from './components/Layout.vue'
   </div>
 </template>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f2f5;
-}
-
+<style scoped>
 #app {
   min-height: 100vh;
 }

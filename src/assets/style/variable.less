@@ -1,0 +1,213 @@
+/* 全局变量 */
+:root {
+  /* 主色调 */
+  --color-primary: #409eff;
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-info: #909399;
+  
+  /* 背景色 */
+  --bg-color: #ffffff;
+  --bg-color-light: #f5f7fa;
+  --bg-color-lighter: #fafafa;
+  
+  /* 文字色 */
+  --text-color-primary: #303133;
+  --text-color-regular: #606266;
+  --text-color-secondary: #909399;
+  --text-color-placeholder: #c0c4cc;
+  
+  /* 边框色 */
+  --border-color: #dcdfe6;
+  --border-color-light: #e4e7ed;
+  --border-color-lighter: #ebeef5;
+  --border-color-extra-light: #f2f6fc;
+  
+  /* 阴影 */
+  --box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  
+  /* 圆角 */
+  --border-radius-base: 4px;
+  --border-radius-small: 2px;
+  --border-radius-round: 20px;
+  --border-radius-circle: 100%;
+  
+  /* 字体大小 */
+  --font-size-extra-large: 20px;
+  --font-size-large: 18px;
+  --font-size-medium: 16px;
+  --font-size-base: 14px;
+  --font-size-small: 13px;
+  --font-size-mini: 12px;
+  
+  /* 间距 */
+  --spacing-extra-large: 32px;
+  --spacing-large: 24px;
+  --spacing-medium: 16px;
+  --spacing-small: 12px;
+  --spacing-extra-small: 8px;
+  --spacing-mini: 4px;
+}
+
+/* 响应式断点 */
+$screen-xs: 480px;
+$screen-sm: 768px;
+$screen-md: 992px;
+$screen-lg: 1200px;
+$screen-xl: 1920px;
+
+/* 混合宏 */
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin multi-line-ellipsis($lines: 2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: $lines;
+  overflow: hidden;
+}
+
+@mixin clearfix {
+  &::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+
+/* 通用样式 */
+.app-container {
+  padding: var(--spacing-medium);
+  background-color: var(--bg-color);
+  min-height: calc(100vh - 84px);
+}
+
+.page-header {
+  margin-bottom: var(--spacing-medium);
+  
+  .page-title {
+    font-size: var(--font-size-large);
+    font-weight: 500;
+    color: var(--text-color-primary);
+    margin-bottom: var(--spacing-extra-small);
+  }
+  
+  .page-desc {
+    font-size: var(--font-size-small);
+    color: var(--text-color-secondary);
+  }
+}
+
+/* 表格样式 */
+.table-wrapper {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-base);
+  box-shadow: var(--box-shadow-base);
+  overflow: hidden;
+}
+
+/* 表单样式 */
+.form-container {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-base);
+  box-shadow: var(--box-shadow-base);
+  padding: var(--spacing-medium);
+}
+
+/* 卡片样式 */
+.card-container {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-base);
+  box-shadow: var(--box-shadow-base);
+  overflow: hidden;
+}
+
+/* 响应式工具类 */
+.hidden-xs-only {
+  @media (max-width: $screen-xs - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-sm-only {
+  @media (min-width: $screen-xs) and (max-width: $screen-sm - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-md-only {
+  @media (min-width: $screen-sm) and (max-width: $screen-md - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-lg-only {
+  @media (min-width: $screen-md) and (max-width: $screen-lg - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-xl-only {
+  @media (min-width: $screen-lg) and (max-width: $screen-xl - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-xs-and-down {
+  @media (max-width: $screen-xs - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-sm-and-down {
+  @media (max-width: $screen-sm - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-md-and-down {
+  @media (max-width: $screen-md - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-lg-and-down {
+  @media (max-width: $screen-lg - 1px) {
+    display: none !important;
+  }
+}
+
+.hidden-xs-and-up {
+  @media (min-width: $screen-xs) {
+    display: none !important;
+  }
+}
+
+.hidden-sm-and-up {
+  @media (min-width: $screen-sm) {
+    display: none !important;
+  }
+}
+
+.hidden-md-and-up {
+  @media (min-width: $screen-md) {
+    display: none !important;
+  }
+}
+
+.hidden-lg-and-up {
+  @media (min-width: $screen-lg) {
+    display: none !important;
+  }
+}

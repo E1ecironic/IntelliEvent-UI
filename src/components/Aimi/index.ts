@@ -1,0 +1,9 @@
+// Aimi组件统一导出
+export { default as AimiForm } from './AimiForm.vue'
+export { default as AimiSearchForm } from './AimiSearchForm.vue'
+export { default as AimiTable } from './AimiTable.vue'
+export { default as AimiDialog } from './AimiDialog.vue'
+export { default as AimiUpload } from './AimiUpload.vue'
+export { default as AimiTabs } from './AimiTabs.vue'
+export { default as AimiSearch } from './AimiSearch.vue'
+export { default as Pagination } from './Pagination.vue'
