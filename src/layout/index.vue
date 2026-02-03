@@ -152,6 +152,7 @@ const unreadNotifications = computed(() => store.unreadNotifications)
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-width: 0;
 }
 
 .header {
@@ -195,6 +196,8 @@ const unreadNotifications = computed(() => store.unreadNotifications)
   flex: 1;
   padding: 20px;
   background-color: #f0f2f5;
-  overflow-y: auto;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 </style>

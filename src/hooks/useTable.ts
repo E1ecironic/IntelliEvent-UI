@@ -1,5 +1,5 @@
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import type { VxeTableInstance } from 'vxe-table'
+import { ref, reactive, onMounted, onUnmounted, nextTick, type Ref } from 'vue'
+import type { TableInstance } from 'element-plus'
 
 interface UseTableOptions {
   // 表格数据
@@ -41,10 +41,9 @@ interface UseTableReturn {
   clearSelection: () => void
   setCurrentRow: (row: any) => void
   clearCurrentRow: () => void
-  getCurrentRow: () => any
   
   // 表格实例
-  tableRef: Ref<VxeTableInstance | null>
+  tableRef: Ref<TableInstance | null>
 }
 
 export function useTable(
@@ -71,7 +70,7 @@ export function useTable(
   const total = ref(0)
   const currentPage = ref(1)
   const pageSize = ref(defaultOptions.pageSize)
-  const tableRef = ref<VxeTableInstance | null>(null)
+  const tableRef = ref<TableInstance | null>(null)
   
   // 搜索参数
   const searchParams = reactive<Record<string, any>>({})
@@ -88,8 +87,8 @@ export function useTable(
     loading.value = true
     try {
       const requestParams = {
-        page: currentPage.value,
-        size: pageSize.value,
+        pageNum: currentPage.value,
+        pageSize: pageSize.value,
         ...searchParams,
         ...params
       }
@@ -147,7 +146,10 @@ export function useTable(
 
   // 获取选中的记录
   const getSelectRecords = () => {
-    return tableRef.value?.getCheckboxRecords() || []
+    if (tableRef.value) {
+      return tableRef.value.getSelectionRows()
+    }
+    return []
   }
 
   // 获取选中的ID
@@ -157,22 +159,23 @@ export function useTable(
 
   // 清空选择
   const clearSelection = () => {
-    tableRef.value?.clearCheckboxRow()
+    if (tableRef.value) {
+      tableRef.value.clearSelection()
+    }
   }
 
   // 设置当前行
   const setCurrentRow = (row: any) => {
-    tableRef.value?.setCurrentRow(row)
+    if (tableRef.value) {
+      tableRef.value.setCurrentRow(row)
+    }
   }
 
   // 清空当前行
   const clearCurrentRow = () => {
-    tableRef.value?.clearCurrentRow()
-  }
-
-  // 获取当前行
-  const getCurrentRow = () => {
-    return tableRef.value?.getCurrentRecord()
+    if (tableRef.value) {
+      tableRef.value.setCurrentRow(undefined)
+    }
   }
 
   // 自动计算表格高度
@@ -186,8 +189,10 @@ export function useTable(
         const windowHeight = window.innerHeight
         const height = windowHeight - rect.top - defaultOptions.offsetHeight
         
-        if (tableRef.value) {
-          tableRef.value.height = Math.max(height, 200)
+        // Element Plus表格使用max-height属性
+        if (tableRef.value && height > 0) {
+          // 设置表格最大高度
+          tableElement.style.maxHeight = Math.max(height, 200) + 'px'
         }
       }
     })
@@ -229,7 +234,6 @@ export function useTable(
     clearSelection,
     setCurrentRow,
     clearCurrentRow,
-    getCurrentRow,
     tableRef
   }
 }

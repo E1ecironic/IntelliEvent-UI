@@ -1,122 +1,115 @@
 <template>
   <div class="aimi-search-form">
-    <el-form
-      ref="formRef"
-      :model="searchForm"
-      :inline="inline"
-      :label-width="labelWidth"
-      :size="size"
-      v-bind="$attrs"
-    >
-      <el-row :gutter="gutter">
-        <el-col
-          v-for="item in formItems"
-          :key="item.field"
-          :span="item.colSpan || colSpan"
-          :xs="24"
-          :sm="12"
-          :md="8"
-          :lg="6"
-          :xl="4"
-        >
-          <el-form-item
-            :label="item.label"
-            :prop="item.field"
-          >
+    <el-form ref="formRef" :model="searchForm" :inline="inline" :label-width="labelWidth" :size="size" v-bind="$attrs">
+      <!-- 基础字段 -->
+      <el-row v-if="basicFormItems.length > 0" :gutter="gutter" class="basic-fields">
+        <el-col v-for="item in basicFormItems" :key="item.field" :span="item.colSpan || colSpan" :xs="24" :sm="12"
+          :md="8" :lg="6" :xl="4">
+          <el-form-item :label="item.label" :prop="item.field">
             <!-- 输入框 -->
-            <el-input
-              v-if="item.type === 'input'"
-              v-model="searchForm[item.field]"
-              :placeholder="item.placeholder || `请输入${item.label}`"
-              :disabled="item.disabled"
-              :clearable="item.clearable !== false"
-              v-trim="item.isTrim !== false"
-              @keyup.enter="handleSearch"
-            />
+            <el-input v-if="item.type === 'input'" v-model="searchForm[item.field]"
+              :placeholder="item.placeholder || `请输入${item.label}`" :disabled="item.disabled"
+              :clearable="item.clearable !== false" v-trim="item.isTrim !== false" @keyup.enter="handleSearch" />
 
             <!-- 选择框 -->
-            <el-select
-              v-else-if="item.type === 'select'"
-              v-model="searchForm[item.field]"
-              :placeholder="item.placeholder || `请选择${item.label}`"
-              :disabled="item.disabled"
-              :clearable="item.clearable !== false"
-              :filterable="item.filterable !== false"
-              :multiple="item.multiple"
-              :collapse-tags="item.collapseTags"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="option in item.options"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-                :disabled="option.disabled"
-              />
+            <el-select v-else-if="item.type === 'select'" v-model="searchForm[item.field]"
+              :placeholder="item.placeholder || `请选择${item.label}`" :disabled="item.disabled"
+              :clearable="item.clearable !== false" :filterable="item.filterable !== false" :multiple="item.multiple"
+              :collapse-tags="item.collapseTags" style="width: 100%">
+              <el-option v-for="option in item.options" :key="option.value" :label="option.label" :value="option.value"
+                :disabled="option.disabled" />
             </el-select>
 
             <!-- 日期选择器 -->
-            <el-date-picker
-              v-else-if="item.type === 'datepicker'"
-              v-model="searchForm[item.field]"
-              :placeholder="item.placeholder || `请选择${item.label}`"
-              :disabled="item.disabled"
-              :clearable="item.clearable !== false"
-              :format="item.format || 'YYYY-MM-DD'"
-              :value-format="item.valueFormat || 'YYYY-MM-DD'"
-              :type="item.dateType || 'date'"
-              :range-separator="item.rangeSeparator || '至'"
-              :start-placeholder="item.startPlaceholder || '开始日期'"
-              :end-placeholder="item.endPlaceholder || '结束日期'"
-              style="width: 100%"
-            />
+            <el-date-picker v-else-if="item.type === 'datepicker'" v-model="searchForm[item.field]"
+              :placeholder="item.placeholder || `请选择${item.label}`" :disabled="item.disabled"
+              :clearable="item.clearable !== false" :format="item.format || 'YYYY-MM-DD'"
+              :value-format="item.valueFormat || 'YYYY-MM-DD'" :type="item.dateType || 'date'"
+              :range-separator="item.rangeSeparator || '至'" :start-placeholder="item.startPlaceholder || '开始日期'"
+              :end-placeholder="item.endPlaceholder || '结束日期'" style="width: 100%" />
 
             <!-- 自定义插槽 -->
-            <slot
-              v-else-if="item.slotName"
-              :name="item.slotName"
-              :item="item"
-              :value="searchForm[item.field]"
-              :searchForm="searchForm"
-            />
+            <slot v-else-if="item.slotName" :name="item.slotName" :item="item" :value="searchForm[item.field]"
+              :searchForm="searchForm" />
 
             <!-- 默认输入框 -->
-            <el-input
-              v-else
-              v-model="searchForm[item.field]"
-              :placeholder="item.placeholder || `请输入${item.label}`"
-              :disabled="item.disabled"
-              :clearable="item.clearable !== false"
-              v-trim="item.isTrim !== false"
-              @keyup.enter="handleSearch"
-            />
-          </el-form-item>
-        </el-col>
-        
-        <!-- 操作按钮 -->
-        <el-col :span="24" style="text-align: right;">
-          <el-form-item>
-            <el-button v-if="showSearch" type="primary" @click="handleSearch" :icon="Search">
-              搜索
-            </el-button>
-            <el-button v-if="showReset" @click="handleReset" :icon="Refresh">
-              重置
-            </el-button>
-            <slot name="actions" :searchForm="searchForm" />
+            <el-input v-else v-model="searchForm[item.field]" :placeholder="item.placeholder || `请输入${item.label}`"
+              :disabled="item.disabled" :clearable="item.clearable !== false" v-trim="item.isTrim !== false"
+              @keyup.enter="handleSearch" />
           </el-form-item>
         </el-col>
       </el-row>
+
+      <!-- 高级字段 -->
+      <el-row v-if="advancedFormItems.length > 0 && (showAdvancedSearch || !showAdvancedToggle)" :gutter="gutter"
+        class="advanced-fields">
+        <el-col v-for="item in advancedFormItems" :key="item.field" :span="item.colSpan || colSpan" :xs="24" :sm="12"
+          :md="8" :lg="6" :xl="4">
+          <el-form-item :label="item.label" :prop="item.field">
+            <!-- 输入框 -->
+            <el-input v-if="item.type === 'input'" v-model="searchForm[item.field]"
+              :placeholder="item.placeholder || `请输入${item.label}`" :disabled="item.disabled"
+              :clearable="item.clearable !== false" v-trim="item.isTrim !== false" @keyup.enter="handleSearch" />
+
+            <!-- 选择框 -->
+            <el-select v-else-if="item.type === 'select'" v-model="searchForm[item.field]"
+              :placeholder="item.placeholder || `请选择${item.label}`" :disabled="item.disabled"
+              :clearable="item.clearable !== false" :filterable="item.filterable !== false" :multiple="item.multiple"
+              :collapse-tags="item.collapseTags" style="width: 100%">
+              <el-option v-for="option in item.options" :key="option.value" :label="option.label" :value="option.value"
+                :disabled="option.disabled" />
+            </el-select>
+
+            <!-- 日期选择器 -->
+            <el-date-picker v-else-if="item.type === 'datepicker'" v-model="searchForm[item.field]"
+              :placeholder="item.placeholder || `请选择${item.label}`" :disabled="item.disabled"
+              :clearable="item.clearable !== false" :format="item.format || 'YYYY-MM-DD'"
+              :value-format="item.valueFormat || 'YYYY-MM-DD'" :type="item.dateType || 'date'"
+              :range-separator="item.rangeSeparator || '至'" :start-placeholder="item.startPlaceholder || '开始日期'"
+              :end-placeholder="item.endPlaceholder || '结束日期'" style="width: 100%" />
+
+            <!-- 自定义插槽 -->
+            <slot v-else-if="item.slotName" :name="item.slotName" :item="item" :value="searchForm[item.field]"
+              :searchForm="searchForm" />
+
+            <!-- 默认输入框 -->
+            <el-input v-else v-model="searchForm[item.field]" :placeholder="item.placeholder || `请输入${item.label}`"
+              :disabled="item.disabled" :clearable="item.clearable !== false" v-trim="item.isTrim !== false"
+              @keyup.enter="handleSearch" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <!-- 操作按钮 -->
+      <el-col :span="24" style="text-align: right;">
+        <el-form-item>
+          <el-button v-if="showSearch" type="primary" @click="handleSearch" :icon="Search">
+            搜索
+          </el-button>
+          <el-button v-if="showReset" @click="handleReset" :icon="Refresh">
+            重置
+          </el-button>
+          <el-button v-if="showAdvancedToggle && advancedFormItems.length > 0" text @click="toggleAdvanced">
+            {{ showAdvancedSearch ? '收起' : '高级搜索' }}
+            <el-icon class="el-icon--right">
+              <component :is="showAdvancedSearch ? ArrowUp : ArrowDown" />
+            </el-icon>
+          </el-button>
+          <slot name="actions" :searchForm="searchForm" />
+        </el-form-item>
+      </el-col>
     </el-form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { ref, reactive, watch, computed } from 'vue'
+import { Search, Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import type { FormOption } from '@/types/form'
 
 interface Props {
   formItems: FormOption[]
+  basicFields?: string[] // 基础字段（始终显示）
   showSearch?: boolean
   showReset?: boolean
   inline?: boolean
@@ -125,6 +118,8 @@ interface Props {
   gutter?: number
   colSpan?: number
   defaultValues?: Record<string, any>
+  defaultAdvanced?: boolean // 默认是否展开高级搜索
+  showAdvancedToggle?: boolean // 是否显示高级搜索切换按钮
 }
 
 interface Emits {
@@ -140,7 +135,10 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'default',
   gutter: 20,
   colSpan: 6,
-  defaultValues: () => ({})
+  defaultValues: () => ({}),
+  defaultAdvanced: false,
+  showAdvancedToggle: false,
+  basicFields: () => []
 })
 
 const emit = defineEmits<Emits>()
@@ -150,6 +148,22 @@ const formRef = ref()
 
 // 响应式数据
 const searchForm = reactive<Record<string, any>>({})
+const showAdvancedSearch = ref(props.defaultAdvanced)
+
+// 计算属性 - 分离基础字段和高级字段
+const basicFormItems = computed(() => {
+  if (!props.basicFields || props.basicFields.length === 0) {
+    return props.formItems
+  }
+  return props.formItems.filter(item => props.basicFields.includes(item.field))
+})
+
+const advancedFormItems = computed(() => {
+  if (!props.basicFields || props.basicFields.length === 0) {
+    return []
+  }
+  return props.formItems.filter(item => !props.basicFields.includes(item.field))
+})
 
 // 初始化表单数据
 const initFormData = () => {
@@ -168,6 +182,11 @@ const handleReset = () => {
   formRef.value?.resetFields()
   initFormData()
   emit('reset')
+}
+
+// 切换高级搜索
+const toggleAdvanced = () => {
+  showAdvancedSearch.value = !showAdvancedSearch.value
 }
 
 // 获取表单数据
@@ -194,9 +213,27 @@ defineExpose({
 
 <style scoped lang="scss">
 .aimi-search-form {
+  width: 100%;
+  box-sizing: border-box;
   padding: 16px;
   background-color: var(--el-bg-color);
   border-radius: 4px;
   margin-bottom: 16px;
+}
+
+.basic-fields {
+  margin-bottom: 0;
+}
+
+.advanced-fields {
+  padding-top: 8px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  margin-top: 12px;
+}
+
+.advanced-fields::before {
+  content: '';
+  display: block;
+  height: 8px;
 }
 </style>

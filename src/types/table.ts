@@ -1,4 +1,4 @@
-// 表格配置类型
+// 表格配置类型 - 适配Element Plus表格
 export interface TableOption {
   propList: ColumnOption[]
   showIndexColumn?: boolean
@@ -16,6 +16,9 @@ export interface ColumnOption {
   align?: 'left' | 'center' | 'right'
   fixed?: 'left' | 'right' | boolean
   sortable?: boolean | 'custom'
+  sortMethod?: (a: any, b: any) => number
+  sortBy?: string | ((row: any) => any) | string[]
+  sortOrders?: ('ascending' | 'descending' | null)[]
   formatter?: (row: any, column: any, cellValue: any, index: number) => string
   render?: (row: any, column: any, cellValue: any, index: number) => any
   slotName?: string
@@ -27,17 +30,20 @@ export interface ColumnOption {
   editSlotName?: string
   headerSlotName?: string
   footerSlotName?: string
-  filters?: any[]
+  filters?: Array<{ text: string; value: any }>
   filterMultiple?: boolean
   filterMethod?: (value: any, row: any, column: any) => boolean
+  filterPlacement?: string
+  filteredValue?: any[]
   className?: string | ((params: any) => string)
+  labelClassName?: string | ((params: any) => string)
   headerClassName?: string | ((params: any) => string)
   footerClassName?: string | ((params: any) => string)
-  showOverflow?: boolean | string
-  showHeaderOverflow?: boolean | string
-  showFooterOverflow?: boolean | string
+  showOverflowTooltip?: boolean
   resizable?: boolean
   visible?: boolean
+  selectable?: (row: any, index: number) => boolean
+  reserveSelection?: boolean
   dragSort?: boolean
   treeNode?: boolean
 }
@@ -66,6 +72,8 @@ export interface PaginationOption {
   background?: boolean
   autoScroll?: boolean
   hidden?: boolean
+  small?: boolean
+  disabled?: boolean
 }
 
 // 搜索表单配置类型

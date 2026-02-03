@@ -9,7 +9,9 @@
         </div>
         <div class="header-actions">
           <el-button type="primary" @click="showAddTopLevelDialog">
-            <el-icon><Plus /></el-icon>
+            <el-icon>
+              <Plus />
+            </el-icon>
             新增组织
           </el-button>
           <el-button @click="expandAll">展开全部</el-button>
@@ -22,24 +24,20 @@
     <el-card class="filter-card">
       <el-row :gutter="20" align="middle">
         <el-col :span="6">
-          <el-input
-            v-model="searchName"
-            placeholder="搜索组织名称"
-            clearable
-          >
+          <el-input v-model="searchName" placeholder="搜索组织名称" clearable>
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </el-col>
         <el-col :span="6">
-          <el-input
-            v-model="searchCode"
-            placeholder="搜索组织编码"
-            clearable
-          >
+          <el-input v-model="searchCode" placeholder="搜索组织编码" clearable>
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </el-col>
@@ -61,16 +59,8 @@
     <!-- 组织架构树形展示 -->
     <el-card class="content-card">
       <div class="tree-container">
-        <el-tree
-          ref="treeRef"
-          :data="organizationList"
-          :props="treeProps"
-          :expand-on-click-node="false"
-          :highlight-current="true"
-          :filter-node-method="filterNode"
-          node-key="id"
-          @node-click="handleNodeClick"
-        >
+        <el-tree ref="treeRef" :data="organizationList" :props="treeProps" :expand-on-click-node="false"
+          :highlight-current="true" :filter-node-method="filterNode" node-key="id" @node-click="handleNodeClick">
           <template #default="{ data }">
             <div class="org-node">
               <div class="node-info">
@@ -80,68 +70,62 @@
                     <Folder v-else />
                   </el-icon>
                   {{ data.name }}
-                  <el-tag
-                    v-if="data.status === 0"
-                    type="info"
-                    size="small"
-                    style="margin-left: 8px;"
-                  >
+                  <el-tag v-if="data.status === 0" type="info" size="small" style="margin-left: 8px;">
                     已禁用
                   </el-tag>
                 </div>
                 <div class="org-meta">
                   <span class="meta-item">
-                    <el-icon><Document /></el-icon>
+                    <el-icon>
+                      <Document />
+                    </el-icon>
                     编码: {{ data.code }}
                   </span>
                   <span class="meta-item">
-                    <el-icon><User /></el-icon>
+                    <el-icon>
+                      <User />
+                    </el-icon>
                     负责人: {{ data.managerName || '未设置' }}
                   </span>
                   <span class="meta-item">
-                    <el-icon><Phone /></el-icon>
+                    <el-icon>
+                      <Phone />
+                    </el-icon>
                     电话: {{ data.connectPhone || '未设置' }}
                   </span>
 
                 </div>
               </div>
               <div class="node-actions">
-                <el-button
-                  type="primary"
-                  size="small"
-                  @click.stop="showAddChildDialog(data)"
-                >
-                  <el-icon><Plus /></el-icon>
+                <el-button type="primary" size="small" @click.stop="showAddChildDialog(data)">
+                  <el-icon>
+                    <Plus />
+                  </el-icon>
                   添加下级
                 </el-button>
-                <el-button
-                  size="small"
-                  @click.stop="showEditDialog(data)"
-                >
-                  <el-icon><Edit /></el-icon>
+                <el-button size="small" @click.stop="showEditDialog(data)">
+                  <el-icon>
+                    <Edit />
+                  </el-icon>
                   编辑
                 </el-button>
-                <el-button
-                  size="small"
-                  @click.stop="showUsersDialog(data)"
-                >
-                  <el-icon><User /></el-icon>
+                <el-button size="small" @click.stop="showUsersDialog(data)">
+                  <el-icon>
+                    <User />
+                  </el-icon>
                   成员
                 </el-button>
-                <el-button
-                  :type="data.status === 1 ? 'danger' : 'success'"
-                  size="small"
-                  @click.stop="toggleStatus(data)"
-                >
-                  <el-icon><SwitchButton /></el-icon>
+                <el-button :type="data.status === 1 ? 'danger' : 'success'" size="small"
+                  @click.stop="toggleStatus(data)">
+                  <el-icon>
+                    <SwitchButton />
+                  </el-icon>
                   {{ data.status === 1 ? '禁用' : '启用' }}
                 </el-button>
-                <el-button
-                  type="danger"
-                  size="small"
-                  @click.stop="deleteOrganization(data)"
-                >
-                  <el-icon><Delete /></el-icon>
+                <el-button type="danger" size="small" @click.stop="deleteOrganization(data)">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
                   删除
                 </el-button>
               </div>
@@ -152,25 +136,15 @@
 
       <!-- 分页控件 -->
       <div class="pagination-container" v-if="totalCount > 0">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="totalCount"
-          :page-sizes="config.performance.pagination.pageSizes"
-          :layout="config.performance.pagination.layout"
-          @size-change="handlePageSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="totalCount"
+          :page-sizes="config.performance.pagination.pageSizes" :layout="config.performance.pagination.layout"
+          @size-change="handlePageSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
     <!-- 新增/编辑组织对话框 -->
-    <el-dialog
-      v-model="showAddDialog"
-      :title="editingOrg ? '编辑组织' : (isAddingSubordinate ? '添加下级组织' : '新增组织')"
-      :width="config.dimensions.dialog.width.medium"
-      @close="resetForm"
-    >
+    <el-dialog v-model="showAddDialog" :title="editingOrg ? '编辑组织' : (isAddingSubordinate ? '添加下级组织' : '新增组织')"
+      :width="config.dimensions.dialog.width.medium" @close="resetForm">
       <el-form ref="orgFormRef" :model="orgForm" :rules="orgRules" label-width="100px">
         <el-form-item label="组织名称" prop="name">
           <el-input v-model="orgForm.name" placeholder="请输入组织名称" />
@@ -179,15 +153,8 @@
           <el-input v-model="orgForm.code" placeholder="请输入组织编码" />
         </el-form-item>
         <el-form-item v-if="showParentOrgSelect" label="上级组织" prop="parentId">
-          <el-tree-select
-            v-model="orgForm.parentId"
-            :data="organizationList"
-            :props="treeProps"
-            placeholder="请选择上级组织"
-            clearable
-            :disabled="isAddingSubordinate"
-            check-strictly
-          />
+          <el-tree-select v-model="orgForm.parentId" :data="organizationList" :props="treeProps" placeholder="请选择上级组织"
+            clearable :disabled="isAddingSubordinate" check-strictly />
           <div v-if="isAddingSubordinate" style="color: #909399; font-size: 12px; margin-top: 5px;">
             提示：正在添加下级组织，上级组织已自动填充且不可修改
           </div>
@@ -209,12 +176,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
-          <el-input
-            v-model="orgForm.remark"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入备注信息"
-          />
+          <el-input v-model="orgForm.remark" type="textarea" :rows="3" placeholder="请输入备注信息" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -226,17 +188,14 @@
     </el-dialog>
 
     <!-- 组织成员管理对话框 -->
-    <el-dialog
-      v-model="showUsersDialogFlag"
-      title="组织成员管理"
-      width="800px"
-      @close="currentOrgUsers = []"
-    >
+    <el-dialog v-model="showUsersDialogFlag" title="组织成员管理" width="800px" @close="currentOrgUsers = []">
       <div class="org-users-container">
         <div class="users-header">
           <span>{{ currentOrg?.name }} - 成员列表</span>
           <el-button type="primary" size="small" @click="showAddUserDialog = true">
-            <el-icon><Plus /></el-icon>
+            <el-icon>
+              <Plus />
+            </el-icon>
             添加成员
           </el-button>
         </div>
@@ -267,7 +226,6 @@ import {
   OfficeBuilding,
   Folder,
   Document,
-  User as UserIcon,
   Phone,
   Edit,
   SwitchButton,
@@ -348,25 +306,25 @@ const loadOrganizations = async (pageNum: number = 1, pageSizeParam: number = 10
   loading.value = true
   try {
     console.log('加载组织数据，参数:', { pageNum, pageSize: pageSizeParam, searchName: searchName.value, searchCode: searchCode.value, filterStatus: filterStatus.value })
-    
+
     // 使用分页参数和搜索条件获取数据（后端现在支持搜索和筛选）
     const response = await organizationApi.getOrganizationPage(pageNum, pageSizeParam, searchName.value, null, filterStatus.value, searchCode.value)
-    
+
     if (response.code === 200 && response.data) {
       console.log('组织数据加载成功:', response.data)
       // 处理分页数据 - 后端现在返回树形结构数据
       const { records, total, current, size } = response.data
-      
+
       // 后端已经返回树形结构数据，直接使用，无需转换
       const treeData: Organization[] = records || []
-      
+
       // 存储所有数据用于前端搜索
       if (pageNum === 1) {
         allOrganizationData.value = treeData
       } else {
         allOrganizationData.value = [...allOrganizationData.value, ...treeData]
       }
-      
+
       // 如果是第一页，直接替换数据
       if (pageNum === 1) {
         organizationList.value = treeData
@@ -377,24 +335,24 @@ const loadOrganizations = async (pageNum: number = 1, pageSizeParam: number = 10
         // 如果是后续页面，追加数据（适用于树形结构的懒加载）
         organizationList.value = [...organizationList.value, ...treeData]
       }
-      
+
       // 查询成功，不显示提示消息
     } else {
       ElMessage.error(response.message || '加载组织架构数据失败')
     }
   } catch (error) {
-     const err = error as Error & {
-        response?: {
-            data?: any;
-            status?: number;
-        }
+    const err = error as Error & {
+      response?: {
+        data?: any;
+        status?: number;
+      }
     };
-    
+
     console.error('加载组织架构失败:', err);
     console.error('错误详情:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
     });
     ElMessage.error('加载组织架构失败，请稍后重试')
   } finally {
@@ -543,7 +501,7 @@ const removeUserFromOrg = async (user: User): Promise<void> => {
         type: 'warning'
       }
     )
-    
+
     if (!user.id) {
       ElMessage.error('用户 ID 不存在')
       return
@@ -586,19 +544,19 @@ const toggleStatus = async (org: Organization): Promise<void> => {
         type: 'warning'
       }
     )
-    
+
     const newStatus: number = org.status === 1 ? 0 : 1
     const response = await organizationApi.updateOrganization({
       id: org.id!,
       status: newStatus
     })
-    
+
     if (response.code === 200) {
       org.status = newStatus
       // 递归更新所有子组织的状态
       updateChildOrganizations(org, newStatus)
       ElMessage.success(`${newStatus === 1 ? '启用' : '禁用'}成功`)
-      
+
       // 如果有子组织，显示提示信息
       if (org.children && org.children.length > 0) {
         ElMessage.info(`已同步${newStatus === 1 ? '启用' : '禁用'}了 ${org.children.length} 个子组织`)
@@ -628,12 +586,12 @@ const deleteOrganization = async (org: Organization): Promise<void> => {
       }
       return count
     }
-    
+
     const childCount: number = getChildOrgCount(org)
-    const deleteWarning: string = childCount > 0 
+    const deleteWarning: string = childCount > 0
       ? `确定要删除组织 "${org.name}" 吗？\n\n⚠️ 警告：此操作将同时删除该组织下的 ${childCount} 个子组织，此操作不可恢复！`
       : `确定要删除组织 "${org.name}" 吗？\n\n⚠️ 警告：此操作不可恢复！`
-    
+
     await ElMessageBox.confirm(
       deleteWarning,
       '删除确认',
@@ -645,9 +603,9 @@ const deleteOrganization = async (org: Organization): Promise<void> => {
         dangerouslyUseHTMLString: true
       }
     )
-    
+
     const response = await organizationApi.deleteOrganization(org.id!)
-    
+
     if (response.code === 200) {
       ElMessage.success('删除成功')
       // 重新加载数据
@@ -670,14 +628,14 @@ const saveOrganization = async (): Promise<void> => {
     const submitData: Partial<Organization> = {
       ...orgForm
     }
-    
+
     console.log('提交的组织数据:', submitData)
-    
+
     const id = editingOrg.value?.id
     const response = id
       ? await organizationApi.updateOrganization({ ...submitData, id })
       : await organizationApi.createOrganization(submitData)
-    
+
     if (response.code === 200) {
       ElMessage.success(editingOrg.value ? '更新成功' : '创建成功')
       showAddDialog.value = false
@@ -880,7 +838,7 @@ onMounted((): void => {
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .node-actions {
     flex-wrap: wrap;
   }
@@ -892,12 +850,12 @@ onMounted((): void => {
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .header-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .org-meta {
     flex-direction: column;
     gap: 8px;

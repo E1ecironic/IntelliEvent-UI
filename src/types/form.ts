@@ -27,7 +27,8 @@ export interface FormOption {
   // 日期选择器特有属性
   format?: string
   valueFormat?: string
-  dateType?: 'date' | 'datetime' | 'datetimerange' | 'daterange'
+  dateType?: 'date' | 'datetime' | 'datetimerange' | 'daterange' | 'time' | 'timerange'
+  isRange?: boolean
   rangeSeparator?: string
   startPlaceholder?: string
   endPlaceholder?: string
@@ -62,40 +63,6 @@ export interface ItemOption {
   disabled?: boolean
 }
 
-// 表格配置类型
-export interface TableOption {
-  propList: ColumnOption[]
-  showIndexColumn?: boolean
-  showSelectColumn?: boolean
-  showPagination?: boolean
-  showSummary?: boolean
-  editConfig?: EditConfig
-}
-
-export interface ColumnOption {
-  prop: string
-  label: string
-  minWidth?: string | number
-  width?: string | number
-  align?: 'left' | 'center' | 'right'
-  fixed?: 'left' | 'right' | boolean
-  sortable?: boolean | 'custom'
-  formatter?: (row: any, column: any, cellValue: any, index: number) => string
-  render?: (row: any, column: any, cellValue: any, index: number) => any
-  slotName?: string
-  editable?: boolean
-  editType?: 'input' | 'select' | 'datepicker'
-  editOptions?: ItemOption[]
-  editRules?: Record<string, any>
-}
-
-export interface EditConfig {
-  trigger: 'click' | 'dblclick'
-  mode: 'cell' | 'row'
-  showIcon?: boolean
-  showStatus?: boolean
-}
-
 // 标签页配置类型
 export interface TabOption {
   label: string
@@ -103,26 +70,4 @@ export interface TabOption {
   disabled?: boolean
   closable?: boolean
   lazy?: boolean
-}
-
-// 分页配置类型
-export interface PaginationOption {
-  page: number
-  limit: number
-  total: number
-  pageSizes?: number[]
-  layout?: string
-  background?: boolean
-  autoScroll?: boolean
-  hidden?: boolean
-}
-
-// 搜索表单配置类型
-export interface SearchFormOption {
-  formItems: FormOption[]
-  showReset?: boolean
-  showSearch?: boolean
-  inline?: boolean
-  labelWidth?: string | number
-  size?: 'large' | 'default' | 'small'
 }

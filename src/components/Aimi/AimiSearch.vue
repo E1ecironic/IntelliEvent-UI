@@ -97,6 +97,8 @@ defineExpose({
   
   .search-content {
     position: relative;
+    width: 100%;
+    overflow: hidden;
     
     &.advanced-show {
       padding-bottom: 8px;

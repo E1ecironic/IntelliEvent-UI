@@ -46,8 +46,8 @@ img {
   border-style: none;
 }
 
-/* 按钮样式重置 */
-button {
+/* 按钮样式重置 - 只影响原生button，不影响Element Plus按钮 */
+button:not(.el-button) {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;

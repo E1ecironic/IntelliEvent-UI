@@ -6,8 +6,9 @@ import pinia from './store'
 import router from './router'
 import App from './App.vue'
 import { registerDirectives } from '@/js/directives'
-import '@/assets/style/base.css'
+// 注意：element-plus样式要在base.css之前加载，避免被覆盖
 import '@/assets/style/element-plus.scss'
+import '@/assets/style/base.css'
 
 const app = createApp(App)
 
