@@ -1,7 +1,7 @@
 // AI相关子路由
 export const aiRoutes = [
   {
-    path: '/ai/generate',
+    path: 'ai/generate',
     name: 'AIGenerate',
     component: () => import('@/views/ai/generate/index.vue'),
     meta: {

@@ -1,30 +1,30 @@
 <template>
   <div class="app-container">
     <!-- 搜索区 -->
-    <aimi-search>
-      <aimi-search-form
-        :form-items="searchFormConfig"
-        @search="handleSearch"
-        @reset="handleReset"
-      />
-      <template #button>
-        <el-button type="primary" @click="handleAdd">
-          <el-icon><Plus /></el-icon>新增用户
-        </el-button>
-        <el-button @click="handleBatchDelete" type="danger" :disabled="!selectedIds.length">
-          <el-icon><Delete /></el-icon>批量删除
-        </el-button>
+    <aimi-search-form
+      :form-items="searchFormConfig"
+      :basic-fields="['userName', 'realName', 'phone']"
+      show-advanced-toggle
+      @search="handleSearch"
+      @reset="handleReset"
+    >
+      <template #toolbar>
+        <el-button type="primary" @click="handleAdd" :icon="Plus">新增</el-button>
+        <el-button type="danger" :disabled="!selectedIds.length" @click="handleBatchDelete" :icon="Delete">批量删除</el-button>
       </template>
-    </aimi-search>
+    </aimi-search-form>
 
     <!-- 表格区 -->
     <aimi-table
+      ref="tableRef"
       v-bind="tableConfig"
       :loading="loading"
       :data="tableData"
       :total="total"
       :current-page="currentPage"
       :page-size="pageSize"
+      style="margin-top: 16px;"
+      :row-key="tableConfig.rowKey || 'id'"
       @page-change="(page: number) => getTableData()"
       @size-change="(size: number) => getTableData()"
       @selection-change="handleSelectionChange"
@@ -63,10 +63,10 @@
 
       <!-- 操作插槽 -->
       <template #handler="{ row }">
-        <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-        <el-button link type="warning" @click="handleAssignRole(row)">分配角色</el-button>
+        <el-button type="primary" size="small" plain @click="handleEdit(row)">编辑</el-button>
+        <el-button type="warning" size="small" plain @click="handleAssignRole(row)">分配角色</el-button>
         <el-dropdown @command="(command: string) => handleCommand(command, row)">
-          <el-button link type="info" style="margin-left: 8px">
+          <el-button link type="info" size="small" style="margin-left: 8px">
             更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
           </el-button>
           <template #dropdown>
@@ -89,24 +89,33 @@
       width="600px"
       @confirm="handleConfirm"
     >
-      <aimi-form
-        ref="formRef"
-        :form-items="formConfig"
-        v-model="formData"
-        @change="handleFormChange"
-      >
-        <template #orgSelect>
-          <el-tree-select
-            v-model="formData.organizationId"
-            :data="organizationOptions"
-            placeholder="请选择组织架构"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            clearable
-            style="width: 100%"
-            @change="validateField('organizationId')"
-          />
-        </template>
-      </aimi-form>
+      <template #body>
+        <aimi-form
+          ref="formRef"
+          :form-items="formConfig"
+          v-model="formData"
+          @change="handleFormChange"
+        >
+  <template #orgSelect>
+    <el-tree-select
+      v-model="formData.organizationId"
+      :data="organizationOptions"
+      placeholder="请选择组织架构"
+      :props="{ label: 'fullName', value: 'id', children: 'children' }"
+      node-key="id"
+      clearable
+      filterable
+      check-strictly
+      style="width: 100%"
+      @change="validateField('organizationId')"
+    >
+      <template #default="{ data }">
+        <span>{{ data.name }}</span>
+      </template>
+    </el-tree-select>
+  </template>
+        </aimi-form>
+      </template>
     </aimi-dialog>
 
     <!-- 分配角色弹窗 -->
@@ -116,13 +125,15 @@
       width="400px"
       @confirm="handleSaveRoles"
     >
-      <div class="role-selection">
-        <el-checkbox-group v-model="selectedRoleIds">
-          <el-checkbox v-for="role in roleList" :key="role.id" :label="role.id">
-            {{ role.name }}
-          </el-checkbox>
-        </el-checkbox-group>
-      </div>
+      <template #body>
+        <div class="role-selection">
+          <el-checkbox-group v-model="selectedRoleIds">
+            <el-checkbox v-for="role in roleList" :key="role.id" :label="role.id">
+              {{ role.name }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
+      </template>
     </aimi-dialog>
   </div>
 </template>
@@ -145,6 +156,7 @@ import {
 } from '@/components/Aimi'
 
 // 表格逻辑
+const tableRef = ref()
 const {
   loading,
   tableData,
@@ -172,6 +184,8 @@ const formData = reactive<User>({
   realName: '',
   email: '',
   phone: '',
+  password: '',
+  position: '',
   organizationId: undefined,
   status: 1
 })
@@ -184,6 +198,8 @@ const handleAdd = () => {
     realName: '',
     email: '',
     phone: '',
+    password: '',
+    position: '',
     organizationId: undefined,
     status: 1
   })
@@ -322,10 +338,38 @@ const handleSaveRoles = async () => {
 
 // 组织架构选项
 const organizationOptions = ref<Organization[]>([])
+
+/**
+ * 递归处理组织架构数据，生成全路径名称
+ */
+const formatOrgData = (data: any[], parentName = ''): Organization[] => {
+  return data.map((item) => {
+    const fullName = parentName ? `${parentName}/${item.name}` : item.name
+    const newItem = {
+      ...item,
+      fullName
+    }
+    if (item.children && item.children.length > 0) {
+      newItem.children = formatOrgData(item.children, fullName)
+    }
+    return newItem
+  })
+}
+
 const getOrganizationOptions = async () => {
-  const res = await organizationApi.getOrganizationPage(1, 100)
-  if (res.code === 200 && res.data) {
-    organizationOptions.value = res.data.records || []
+  try {
+    const res = await organizationApi.getOrganizationPage(1, 100)
+    console.log('获取组织架构响应:', res)
+    if (res.code === 200 && res.data) {
+      // 兼容 list 和 records 字段
+      const list = res.data.list || res.data.records || []
+      console.log('原始组织列表:', list)
+      // 处理全路径
+      organizationOptions.value = formatOrgData(list)
+      console.log('处理后的组织列表:', organizationOptions.value)
+    }
+  } catch (error) {
+    console.error('获取组织架构失败:', error)
   }
 }
 
@@ -369,9 +413,11 @@ onMounted(() => {
 .app-container {
   padding: 20px;
   width: 100%;
+  height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .user-info {

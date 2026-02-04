@@ -8,9 +8,11 @@ export interface ApiResponse<T = any> {
 
 // 分页响应类型
 export interface PageResponse<T = any> {
-  records: T[]
+  records?: T[]
+  list?: T[]
   total: number
-  size: number
-  current: number
-  pages: number
+  size?: number
+  current?: number
+  pages?: number
+  totalPage?: number
 }

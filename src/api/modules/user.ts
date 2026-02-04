@@ -7,7 +7,15 @@ const baseUrl = '/users'
 export const userApi = {
   ApiPageList: async function (params: any): Promise<ApiResponse<PageResponse<User>>> {
     console.log('用户分页API请求参数:', params)
-    return await request.post(`${baseUrl}/page`, params)
+    // 构建请求参数，过滤空字符串
+    const requestParams: any = { ...params }
+    Object.keys(requestParams).forEach(key => {
+      if (requestParams[key] === '' || requestParams[key] === null || requestParams[key] === undefined) {
+        delete requestParams[key]
+      }
+    })
+    
+    return await request.post(`${baseUrl}/page`, requestParams)
   },
 
   ApiSaveOrUpdate: async function (params: User): Promise<ApiResponse<User>> {

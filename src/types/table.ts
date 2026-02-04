@@ -5,6 +5,7 @@ export interface TableOption {
   showSelectColumn?: boolean
   showPagination?: boolean
   showSummary?: boolean
+  rowKey?: string | ((row: any) => string)
   editConfig?: EditConfig
 }
 
@@ -46,6 +47,20 @@ export interface ColumnOption {
   reserveSelection?: boolean
   dragSort?: boolean
   treeNode?: boolean
+  buttons?: HandlerButton[]
+}
+
+export interface HandlerButton {
+  label: string | ((row: any) => string)
+  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'default' | '' | ((row: any) => string)
+  icon?: any // Component or string name
+  command: string
+  show?: boolean | ((row: any) => boolean)
+  disabled?: boolean | ((row: any) => boolean)
+  link?: boolean
+  plain?: boolean
+  text?: boolean
+  style?: object | ((row: any) => object)
 }
 
 export interface EditConfig {

@@ -1,7 +1,7 @@
 // 活动相关子路由
 export const activityRoutes = [
   {
-    path: '/activities',
+    path: 'activities',
     name: 'ActivityList',
     component: () => import('@/views/activity/list/index.vue'),
     meta: {
@@ -11,7 +11,7 @@ export const activityRoutes = [
     }
   },
   {
-    path: '/activity/:id',
+    path: 'activity/:id',
     name: 'ActivityDetail',
     component: () => import('@/views/activity/detail/index.vue'),
     meta: {

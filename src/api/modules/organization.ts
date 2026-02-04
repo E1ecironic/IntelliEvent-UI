@@ -1,56 +1,6 @@
-import axios, { AxiosInstance } from 'axios'
+import request from './request'
 import type { ApiResponse, PageResponse} from '@/types/api'
 import type { Organization } from '@/views/admin/organization-manage/config'
-
-const API_BASE_URL = 'http://localhost:8080/intellievent'
-
-
-
-// 创建axios实例
-const request: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-// 请求拦截器
-request.interceptors.request.use(
-  config => {
-    // 可以在这里添加认证token
-    // const token = localStorage.getItem('token')
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`
-    // }
-    return config
-  },
-  error => {
-    console.error('请求错误:', error)
-    return Promise.reject(error)
-  }
-)
-
-// 响应拦截器
-request.interceptors.response.use(
-  response => {
-    const { data } = response
-    if (data.code === 200) {
-      return data // 返回整个响应数据，包含code、message、data
-    } else {
-      console.error('API错误:', data.message)
-      return Promise.reject(new Error(data.message || '请求失败'))
-    }
-  },
-  error => {
-    console.error('响应错误:', error)
-    if (error.response?.status === 401) {
-      // 处理未授权情况
-      // router.push('/login')
-    }
-    return Promise.reject(error)
-  }
-)
 
 // 组织管理API
 const organizationApi = {
@@ -73,7 +23,7 @@ const organizationApi = {
    * 分页获取组织架构（支持搜索和筛选）
    */
   getOrganizationPage(pageNum: number = 1, pageSize: number = 10, name: string = '', level: number | null = null, status: number | null = null, code: string = ''): Promise<ApiResponse<PageResponse<Organization>>> {
-    const data = {
+    const data: any = {
       pageNum,
       pageSize,
       name,
@@ -93,9 +43,16 @@ const organizationApi = {
     }
     
     // 如果提供了状态，添加到参数中
-    if (status !== null && status !== undefined && status !== undefined) {
+    if (status !== null && status !== undefined) {
       data.status = status
     }
+    
+    // 清理空字符串和 null/undefined 参数
+    Object.keys(data).forEach(key => {
+      if (data[key] === '' || data[key] === null || data[key] === undefined) {
+        delete data[key]
+      }
+    })
     
     console.log('API请求参数:', data)
     // 使用POST请求，参数通过JSON传递
@@ -103,10 +60,24 @@ const organizationApi = {
   },
 
   /**
-   * 根据ID获取组织架构
+   * 分页获取组织架构（标准接口，支持对象参数）
    */
-  getOrganizationById(id: number): Promise<ApiResponse<Organization>> {
-    return request.get(`/organizations/${id}`)
+  ApiPageList(params: any): Promise<ApiResponse<PageResponse<Organization>>> {
+    // 确保参数中有 pageNum 和 pageSize
+    const requestParams = {
+      pageNum: params.pageNum || 1,
+      pageSize: params.pageSize || 10,
+      ...params
+    }
+    
+    // 清理空字符串和 null/undefined 参数
+    Object.keys(requestParams).forEach(key => {
+      if (requestParams[key] === '' || requestParams[key] === null || requestParams[key] === undefined) {
+        delete requestParams[key]
+      }
+    })
+    
+    return request.post('/organizations/page', requestParams)
   },
 
   /**

@@ -1,7 +1,7 @@
 // 表单配置类型
 export interface FormOption {
   field: string
-  type: 'input' | 'textarea' | 'number' | 'select' | 'datepicker' | 'timepicker' | 'switch' | 'radio' | 'checkbox' | 'upload'
+  type: 'input' | 'textarea' | 'number' | 'select' | 'datepicker' | 'timepicker' | 'switch' | 'radio' | 'checkbox' | 'upload' | 'slot'
   label: string
   placeholder?: string
   colSpan?: number

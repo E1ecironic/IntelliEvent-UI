@@ -94,10 +94,24 @@ export function useTable(
       }
       
       const response = await api(requestParams)
-      
       if (response.code === 200 && response.data) {
-        tableData.value = response.data.records || response.data.list || response.data
-        total.value = response.data.total || tableData.value.length
+        const data = response.data
+        if (Array.isArray(data)) {
+          tableData.value = data
+          total.value = data.length
+        } else if (data && Array.isArray(data.list)) {
+          tableData.value = data.list
+          total.value = data.total || data.list.length
+        } else if (data && Array.isArray(data.records)) {
+          tableData.value = data.records
+          total.value = data.total || data.records.length
+        } else if (data && Array.isArray(data.rows)) {
+          tableData.value = data.rows
+          total.value = data.total || data.rows.length
+        } else {
+          tableData.value = []
+          total.value = 0
+        }
       } else {
         tableData.value = []
         total.value = 0
@@ -183,16 +197,24 @@ export function useTable(
     if (!defaultOptions.autoHeight) return
     
     nextTick(() => {
-      const tableElement = tableRef.value?.$el
+      // 优先获取内部 el-table 的引用，如果没有则使用组件根元素
+      const tableInstance = tableRef.value?.tableRef || tableRef.value
+      const tableElement = tableInstance?.$el
+      
       if (tableElement) {
         const rect = tableElement.getBoundingClientRect()
         const windowHeight = window.innerHeight
         const height = windowHeight - rect.top - defaultOptions.offsetHeight
         
-        // Element Plus表格使用max-height属性
-        if (tableRef.value && height > 0) {
-          // 设置表格最大高度
-          tableElement.style.maxHeight = Math.max(height, 200) + 'px'
+        if (height > 0) {
+          // 设置最大高度，让表格在内容少时自适应，内容多时显示滚动条
+          const maxHeight = Math.max(height, 200) + 'px'
+          if (tableInstance?.setHeight) {
+            // 如果是 el-table 实例，尝试直接设置
+            tableElement.style.maxHeight = maxHeight
+          } else {
+            tableElement.style.maxHeight = maxHeight
+          }
         }
       }
     })

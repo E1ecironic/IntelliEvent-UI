@@ -40,45 +40,58 @@ export const searchFormConfig: FormOption[] = [
     field: 'userName',
     type: 'input',
     label: '用户名',
-    placeholder: '请输入用户名',
-    colSpan: 8
+    placeholder: '请输入用户名'
   },
   {
     field: 'realName',
     type: 'input',
-    label: '姓名',
-    placeholder: '请输入姓名',
-    colSpan: 8
+    label: '真实姓名',
+    placeholder: '请输入真实姓名'
+  },
+  {
+    field: 'phone',
+    type: 'input',
+    label: '手机号',
+    placeholder: '请输入手机号'
   },
   {
     field: 'status',
     type: 'select',
     label: '状态',
     placeholder: '请选择状态',
-    colSpan: 8,
     options: [
       { label: '正常', value: 1 },
       { label: '禁用', value: 0 },
       { label: '待激活', value: 2 }
     ]
+  },
+  {
+    field: 'createTime',
+    type: 'datepicker',
+    label: '创建时间',
+    dateType: 'daterange',
+    startPlaceholder: '开始日期',
+    endPlaceholder: '结束日期',
+    colSpan: 12
   }
 ]
 
 // 表格配置
 export const tableConfig: TableOption = {
   propList: [
-    { prop: 'userName', label: '用户名', minWidth: '120', slotName: 'userInfo' },
-    { prop: 'realName', label: '姓名', minWidth: '100' },
-    { prop: 'email', label: '邮箱', minWidth: '150' },
-    { prop: 'phone', label: '手机号', minWidth: '120' },
-    { prop: 'organizationName', label: '所属组织', minWidth: '120', slotName: 'organization' },
+    { prop: 'userName', label: '用户名', minWidth: '180', slotName: 'userInfo' },
+    { prop: 'realName', label: '姓名', minWidth: '120' },
+    { prop: 'email', label: '邮箱', minWidth: '200' },
+    { prop: 'phone', label: '手机号', minWidth: '150' },
+    { prop: 'organizationName', label: '所属组织', minWidth: '150', slotName: 'organization' },
     { prop: 'status', label: '状态', minWidth: '100', slotName: 'status' },
-    { prop: 'lastLoginAt', label: '最后登录', minWidth: '160', slotName: 'lastLogin' },
-    { prop: 'handler', label: '操作', minWidth: '180', fixed: 'right', slotName: 'handler' }
+    { prop: 'lastLoginAt', label: '最后登录', minWidth: '180', slotName: 'lastLogin' },
+    { prop: 'handler', label: '操作', minWidth: '220', fixed: 'right', slotName: 'handler' }
   ],
   showIndexColumn: true,
   showSelectColumn: true,
-  showPagination: true
+  showPagination: true,
+  rowKey: 'id'
 }
 
 // 新增/编辑表单配置
@@ -88,23 +101,41 @@ export const formConfig: FormOption[] = [
     type: 'input',
     label: '用户名',
     placeholder: '请输入用户名',
-    rules: [{ required: true, message: '请输入用户名', trigger: 'blur' }]
+    colSpan: 24,
+    rules: [
+      { required: true, message: '用户名不能为空', trigger: 'blur' },
+      { pattern: /^[a-zA-Z0-9_]{4,20}$/, message: '用户名只能包含字母、数字和下划线，长度4-20位', trigger: 'blur' }
+    ]
   },
   {
     field: 'realName',
     type: 'input',
     label: '真实姓名',
     placeholder: '请输入真实姓名',
-    rules: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }]
+    colSpan: 24,
+    rules: [{ required: true, message: '真实姓名不能为空', trigger: 'blur' }]
   },
+  /* {
+    field: 'password',
+    type: 'input',
+    label: '密码',
+    placeholder: '请输入密码',
+    showPassword: true,
+    colSpan: 24,
+    rules: [
+      { required: true, message: '密码不能为空', trigger: 'blur' },
+      { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,20}$/, message: '密码必须包含大小写字母和数字，长度8-20位', trigger: 'blur' }
+    ]
+  }, */
   {
     field: 'email',
     type: 'input',
     label: '邮箱',
     placeholder: '请输入邮箱',
+    colSpan: 24,
     rules: [
-      { required: true, message: '请输入邮箱', trigger: 'blur' },
-      { type: 'email', message: '请输入正确的邮箱格式', trigger: ['blur', 'change'] }
+      { required: true, message: '邮箱不能为空', trigger: 'blur' },
+      { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
     ]
   },
   {
@@ -112,10 +143,18 @@ export const formConfig: FormOption[] = [
     type: 'input',
     label: '手机号',
     placeholder: '请输入手机号',
+    colSpan: 24,
     rules: [
-      { required: true, message: '请输入手机号', trigger: 'blur' },
-      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+      { required: true, message: '手机号不能为空', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
     ]
+  },
+  {
+    field: 'position',
+    type: 'input',
+    label: '职位',
+    placeholder: '请输入职位',
+    colSpan: 24
   },
   {
     field: 'organizationId',
@@ -123,12 +162,14 @@ export const formConfig: FormOption[] = [
     label: '所属组织',
     placeholder: '请选择组织',
     slotName: 'orgSelect',
-    rules: [{ required: true, message: '请选择组织', trigger: 'change' }]
+    colSpan: 24,
+/*     rules: [{ required: true, message: '请选择组织', trigger: 'change' }] */
   },
   {
     field: 'status',
     type: 'radio',
     label: '状态',
+    colSpan: 24,
     options: [
       { label: '正常', value: 1 },
       { label: '禁用', value: 0 },

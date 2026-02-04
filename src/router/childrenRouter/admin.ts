@@ -1,27 +1,29 @@
 // 管理员相关子路由
 export const adminRoutes = [
   {
-    path: '/admin/organization',
+    path: 'admin/organization',
     name: 'OrganizationManage',
     component: () => import('@/views/admin/organization-manage/index.vue'),
     meta: {
       title: '组织架构管理',
+      description: '管理企业组织架构，支持多层级结构设置',
       icon: 'OfficeBuilding',
       isShow: true
     }
   },
   {
-    path: '/admin/users',
+    path: 'admin/users',
     name: 'UserManage',
     component: () => import('@/views/admin/user-manage/index.vue'),
     meta: {
       title: '用户管理',
+      description: '管理系统所有用户信息，包括添加、修改、删除及权限分配',
       icon: 'User',
       isShow: true
     }
   },
   {
-    path: '/admin/roles',
+    path: 'admin/roles',
     name: 'RoleManage',
     component: () => import('@/views/admin/role-manage/index.vue'),
     meta: {

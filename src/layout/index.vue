@@ -5,14 +5,14 @@
         <h2>AI活动管理</h2>
       </div>
       <el-menu
-        :default-active="$route.path"
+        :default-active="activeMenu"
         class="el-menu-vertical"
         router
         background-color="#304156"
         text-color="#fff"
         active-text-color="#409EFF"
       >
-        <el-menu-item index="/">
+        <el-menu-item index="/dashboard">
           <el-icon><House /></el-icon>
           <span>仪表盘</span>
         </el-menu-item>
@@ -59,28 +59,27 @@
     
     <div class="main-container">
       <el-header class="header">
-        <div class="header-left">
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item>{{ $route.meta.title || '首页' }}</el-breadcrumb-item>
-          </el-breadcrumb>
-        </div>
-        <div class="header-right">
-          <el-badge :value="unreadNotifications" class="notification-badge">
-            <el-icon size="20"><Bell /></el-icon>
-          </el-badge>
-          <el-dropdown>
-            <span class="user-info">
-              <el-avatar size="small" icon="UserFilled" />
-              <span class="username">管理员</span>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item>个人设置</el-dropdown-item>
-                <el-dropdown-item>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
+        <aimi-page-header>
+          <template #right>
+            <div class="header-right">
+              <el-badge :value="unreadNotifications" class="notification-badge">
+                <el-icon size="20"><Bell /></el-icon>
+              </el-badge>
+              <el-dropdown @command="handleCommand">
+                <span class="user-info">
+                  <el-avatar size="small" icon="UserFilled" />
+                  <span class="username">{{ userInfo.userName || '管理员' }}</span>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="profile">个人设置</el-dropdown-item>
+                    <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </template>
+        </aimi-page-header>
       </el-header>
       
       <el-main class="main-content">
@@ -92,7 +91,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useActivityStore } from '@/store/activity'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { authApi } from '@/api'
 import { 
   House, 
   List, 
@@ -107,8 +109,52 @@ import {
   Bell
 } from '@element-plus/icons-vue'
 
+const route = useRoute()
+const router = useRouter()
 const store = useActivityStore()
 const unreadNotifications = computed(() => store.unreadNotifications)
+const activeMenu = computed(() => route.path)
+
+// 用户信息
+const userInfo = computed(() => {
+  const info = localStorage.getItem('userInfo')
+  return info ? JSON.parse(info) : {}
+})
+
+const handleCommand = (command: string) => {
+  if (command === 'logout') {
+    handleLogout()
+  } else if (command === 'profile') {
+    ElMessage.info('个人设置功能开发中...')
+  }
+}
+
+const handleLogout = () => {
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await authApi.logout()
+      // 清除本地存储
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      
+      ElMessage.success('已成功退出登录')
+      // 跳转到登录页
+      router.push('/login')
+    } catch (error) {
+      console.error('退出登录失败:', error)
+      // 即便接口报错，前端也强制退出
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      router.push('/login')
+    }
+  }).catch(() => {
+    // 取消退出
+  })
+}
 </script>
 
 <style scoped lang="scss">
@@ -157,18 +203,9 @@ const unreadNotifications = computed(() => store.unreadNotifications)
 
 .header {
   background-color: white;
-  border-bottom: 1px solid #e4e7ed;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
+  padding: 0;
   height: 60px;
   flex-shrink: 0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
 }
 
 .header-right {

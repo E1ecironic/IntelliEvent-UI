@@ -2,11 +2,14 @@
   <div class="aimi-form">
     <el-form ref="formRef" :model="modelValue" :rules="rules" :label-width="labelWidth" :size="size" v-bind="$attrs">
       <el-row :gutter="gutter">
-        <el-col v-for="item in formItems" :key="item.field" :span="item.colSpan || colSpan" :xs="24" :sm="12" :md="8"
-          :lg="6" :xl="4">
+        <el-col v-for="item in formItems" :key="item.field" :span="item.colSpan || colSpan">
           <el-form-item :label="item.label" :prop="item.field" :rules="item.rules">
+            <!-- 自定义插槽 -->
+            <slot v-if="item.slotName" :name="item.slotName" :item="item" :value="modelValue[item.field]"
+              :modelValue="modelValue" />
+
             <!-- 输入框 -->
-            <el-input v-if="item.type === 'input'" v-model="modelValue[item.field]"
+            <el-input v-else-if="item.type === 'input'" v-model="modelValue[item.field]"
               :placeholder="item.placeholder || `请输入${item.label}`" :disabled="item.disabled"
               :clearable="item.clearable !== false" :show-password="item.showPassword" v-trim="item.isTrim !== false"
               @change="(val: any) => handleFieldChange(item.field, val)">
@@ -107,10 +110,6 @@
               </template>
 
             </el-upload>
-
-            <!-- 自定义插槽 -->
-            <slot v-else-if="item.slotName" :name="item.slotName" :item="item" :value="modelValue[item.field]"
-              :modelValue="modelValue" />
 
             <!-- 默认输入框 -->
             <el-input v-else v-model="modelValue[item.field]" :placeholder="item.placeholder || `请输入${item.label}`"

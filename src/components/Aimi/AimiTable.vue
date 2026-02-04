@@ -1,37 +1,55 @@
 <template>
-  <div class="aimi-table">
-    <div class="table-wrapper">
-      <el-table ref="tableRef" :data="displayData" :loading="displayLoading" :height="height" :max-height="maxHeight"
-        :stripe="stripe" :border="border" :show-header="showHeader" :fit="fit" :empty-text="emptyText"
-        :row-class-name="rowClassName" :cell-class-name="cellClassName" :header-row-class-name="headerRowClassName"
-        :header-cell-class-name="headerCellClassName" :row-style="rowStyle" :cell-style="cellStyle"
-        :header-row-style="headerRowStyle" :header-cell-style="headerCellStyle"
-        :highlight-current-row="highlightCurrentRow" :current-row-key="currentRowKey" :row-key="rowKey"
-        :default-expand-all="defaultExpandAll" :expand-row-keys="expandRowKeys" :default-sort="defaultSort"
-        :tooltip-effect="tooltipEffect" :show-summary="showSummary" :sum-text="sumText" :summary-method="summaryMethod"
-        :select-on-indeterminate="selectOnIndeterminate" :indent="indent" :lazy="lazy" :load="load"
-        :tree-props="treeProps" @select="handleSelect" @select-all="handleSelectAll"
-        @selection-change="handleSelectionChange" @cell-mouse-enter="handleCellMouseEnter"
-        @cell-mouse-leave="handleCellMouseLeave" @cell-click="handleCellClick" @cell-dblclick="handleCellDblclick"
-        @row-click="handleRowClick" @row-contextmenu="handleRowContextmenu" @row-dblclick="handleRowDblclick"
-        @header-click="handleHeaderClick" @header-contextmenu="handleHeaderContextmenu" @sort-change="handleSortChange"
-        @filter-change="handleFilterChange" @current-change="handleCurrentChange" @header-dragend="handleHeaderDragend"
-        @expand-change="handleExpandChange">
-
-        <!-- 序号列 -->
-        <el-table-column v-if="showIndexColumn" type="index" width="60" align="center" label="#" />
-
-        <!-- 选择列 -->
-        <el-table-column v-if="showSelectColumn" type="selection" width="50" align="center" />
-
-        <!-- 展开列 -->
-        <el-table-column v-if="showExpandColumn" type="expand" width="50">
-          <template #default="scope">
-            <slot name="expand" :row="scope.row" :$index="scope.$index" />
-          </template>
-        </el-table-column>
-
-        <!-- 数据列 -->
+  <div class="aimi-table-container" :style="{ height: typeof height === 'number' ? height + 'px' : height }">
+    <div class="table-content" :style="{ height: tableHeight }">
+      <el-table
+        ref="tableRef"
+        v-bind="$attrs"
+        :class="{ 'el-table--fluid-height': !height }"
+        :data="displayData"
+        :loading="displayLoading"
+        :height="tableHeight"
+        :max-height="maxHeight"
+        :stripe="stripe"
+        :border="border"
+        :fit="fit"
+        :show-header="showHeader"
+        :empty-text="emptyText"
+        :highlight-current-row="highlightCurrentRow"
+        :current-row-key="currentRowKey"
+        :row-key="rowKey"
+        :default-expand-all="defaultExpandAll"
+        :expand-row-keys="expandRowKeys"
+        :default-sort="defaultSort"
+        :tooltip-effect="tooltipEffect"
+        :sum-text="sumText"
+        :summary-method="summaryMethod"
+        :show-summary="showSummary"
+        :select-on-indeterminate="selectOnIndeterminate"
+        :indent="indent"
+        :lazy="lazy"
+        :load="load"
+        :tree-props="treeProps"
+        @select="handleSelect"
+        @select-all="handleSelectAll"
+        @selection-change="handleSelectionChange"
+        @cell-mouse-enter="handleCellMouseEnter"
+        @cell-mouse-leave="handleCellMouseLeave"
+        @cell-click="handleCellClick"
+        @cell-dblclick="handleCellDblclick"
+        @row-click="handleRowClick"
+        @row-contextmenu="handleRowContextmenu"
+        @row-dblclick="handleRowDblclick"
+        @header-click="handleHeaderClick"
+        @header-contextmenu="handleHeaderContextmenu"
+        @sort-change="handleSortChange"
+        @filter-change="handleFilterChange"
+        @current-change="handleCurrentChange"
+        @header-dragend="handleHeaderDragend"
+        @expand-change="handleExpandChange"
+      >
+        <el-table-column v-if="showSelectColumn" type="selection" width="55" align="center" :reserve-selection="reserveSelection || $attrs['reserve-selection'] === '' || $attrs['reserve-selection'] === true" />
+        <el-table-column v-if="showIndexColumn" type="index" label="序号" width="60" align="center" />
+        
         <el-table-column v-for="column in displayColumns" :key="column.prop" :prop="column.prop" :label="column.label"
           :width="column.width" :min-width="column.minWidth" :align="column.align || 'left'" :fixed="column.fixed"
           :sortable="column.sortable" :sort-method="column.sortMethod" :sort-by="column.sortBy"
@@ -46,6 +64,45 @@
           <template #default="scope">
             <slot v-if="column.slotName" :name="column.slotName" :row="scope.row" :column="scope.column" :$index="scope.$index"
               :cell-value="scope.row[column.prop]" />
+            <div v-else-if="column.buttons && column.buttons.length > 0" class="handler-btns">
+              <el-button
+                v-for="btn in getVisibleButtons(column.buttons, scope.row)"
+                :key="btn.command"
+                :type="getBtnType(btn, scope.row) as any"
+                :icon="btn.icon"
+                :disabled="getBtnDisabled(btn, scope.row)"
+                :link="btn.link !== false"
+                :plain="btn.plain"
+                :text="btn.text"
+                size="small"
+                @click="handleOperationClick(btn.command, scope.row)"
+              >
+                {{ getBtnLabel(btn, scope.row) }}
+              </el-button>
+              
+              <el-dropdown 
+                v-if="getMoreButtons(column.buttons, scope.row).length > 0" 
+                @command="(command: string) => handleOperationClick(command, scope.row)"
+              >
+                <el-button link type="primary" size="small">
+                  更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item
+                      v-for="btn in getMoreButtons(column.buttons, scope.row)"
+                      :key="btn.command"
+                      :command="btn.command"
+                      :icon="btn.icon"
+                      :disabled="getBtnDisabled(btn, scope.row)"
+                      :style="typeof btn.style === 'object' ? btn.style : {}"
+                    >
+                      {{ getBtnLabel(btn, scope.row) }}
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
             <span v-else>{{ scope.row[column.prop] }}</span>
           </template>
         </el-table-column>
@@ -72,7 +129,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { ColumnOption } from '@/types/table'
+import { ArrowDown } from '@element-plus/icons-vue'
+import type { ColumnOption, HandlerButton } from '@/types/table'
 
 interface Props {
   // 数据
@@ -96,6 +154,7 @@ interface Props {
   showPagination?: boolean
   showSummary?: boolean
   showFooter?: boolean
+  reserveSelection?: boolean
 
   // 样式
   height?: string | number
@@ -168,6 +227,7 @@ interface Emits {
   (e: 'edit', row: any): void
   (e: 'assign-role', row: any): void
   (e: 'command', command: string, row: any): void
+  (e: 'operation-click', command: string, row: any): void
   (e: 'size-change', size: number): void
   (e: 'page-change', page: number): void
 }
@@ -193,6 +253,7 @@ const props = withDefaults(defineProps<Props>(), {
   showPagination: true,
   showSummary: false,
   showFooter: false,
+  reserveSelection: false,
 
   // 样式
   stripe: true,
@@ -245,8 +306,12 @@ const displayColumns = computed(() => {
 
 // 计算属性
 const tableHeight = computed(() => {
-  // 如果需要分页，减去分页高度
-  return props.showPagination ? `calc(100% - 50px)` : '100%'
+  // 如果提供了高度，则计算表格高度
+  if (props.height) {
+    return props.showPagination ? `calc(100% - 50px)` : '100%'
+  }
+  // 否则使用默认高度（自动）
+  return undefined
 })
 
 // 生命周期
@@ -272,7 +337,7 @@ const loadData = async () => {
     const response = await props.requestApi(params)
 
     if (response.code === 200 && response.data) {
-      internalData.value = response.data.records || response.data.list || []
+      internalData.value = response.data.list || response.data.records || []
       internalTotal.value = response.data.total || 0
 
       // 触发分页变化事件
@@ -287,7 +352,39 @@ const loadData = async () => {
   }
 }
 
-// 表格事件处理
+// 操作列按钮处理
+const getVisibleButtons = (buttons: HandlerButton[], row: any) => {
+  const visible = buttons.filter(btn => {
+    if (typeof btn.show === 'function') return btn.show(row)
+    return btn.show !== false
+  })
+  return visible.slice(0, 2)
+}
+
+const getMoreButtons = (buttons: HandlerButton[], row: any) => {
+  const visible = buttons.filter(btn => {
+    if (typeof btn.show === 'function') return btn.show(row)
+    return btn.show !== false
+  })
+  return visible.slice(2)
+}
+
+const getBtnLabel = (btn: HandlerButton, row: any) => {
+  return typeof btn.label === 'function' ? btn.label(row) : btn.label
+}
+
+const getBtnType = (btn: HandlerButton, row: any) => {
+  return typeof btn.type === 'function' ? btn.type(row) : (btn.type || 'primary')
+}
+
+const getBtnDisabled = (btn: HandlerButton, row: any) => {
+  return typeof btn.disabled === 'function' ? btn.disabled(row) : btn.disabled
+}
+
+const handleOperationClick = (command: string, row: any) => {
+  emit('operation-click', command, row)
+}
+
 const handleSelect = (selection: any[], row: any) => {
   emit('select', selection, row)
 }
@@ -377,30 +474,57 @@ const handlePageChange = (page: number) => {
 }
 
 // 暴露方法
+const getSelectionRows = () => tableRef.value?.getSelectionRows()
+const clearSelection = () => tableRef.value?.clearSelection()
+const setCurrentRow = (row: any) => tableRef.value?.setCurrentRow(row)
+const toggleRowSelection = (row: any, selected: boolean) => tableRef.value?.toggleRowSelection(row, selected)
+const toggleAllSelection = () => tableRef.value?.toggleAllSelection()
+const toggleRowExpansion = (row: any, expanded: boolean) => tableRef.value?.toggleRowExpansion(row, expanded)
+
 defineExpose({
   tableRef,
-  loadData
+  loadData,
+  getSelectionRows,
+  clearSelection,
+  setCurrentRow,
+  toggleRowSelection,
+  toggleAllSelection,
+  toggleRowExpansion
 })
 </script>
 
 <style scoped lang="scss">
-.aimi-table {
-  width: 100%;
-  height: 100%;
+.aimi-table-container {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-
-  .table-wrapper {
-    width: 100%;
+  width: 100%;
+  background-color: #fff;
+  
+  .table-content {
     flex: 1;
     overflow: hidden;
+    
+    :deep(.el-table) {
+      width: 100%;
+      
+      &.el-table--fluid-height {
+        height: auto;
+      }
+    }
   }
-
+  
   .pagination-wrapper {
-    margin-top: 16px;
+    padding: 12px 0;
     display: flex;
     justify-content: flex-end;
   }
+}
+
+.handler-btns {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 </style>
