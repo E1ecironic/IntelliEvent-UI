@@ -104,7 +104,7 @@ const refreshCaptcha = async () => {
   captchaLoading.value = true
   try {
     const res = await authApi.getCaptcha()
-    if (res.code === 200) {
+    if (res.code === 200 && res.data) {
       captchaImg.value = res.data.img
       loginForm.uuid = res.data.uuid
     }
@@ -124,7 +124,7 @@ const handleLogin = async () => {
       loading.value = true
       try {
         const res = await authApi.login(loginForm)
-        if (res.code === 200) {
+        if (res.code === 200 && res.data) {
           ElMessage.success('登录成功')
           // 持久化 Token
           localStorage.setItem('token', res.data.token)
@@ -132,6 +132,8 @@ const handleLogin = async () => {
           localStorage.setItem('userInfo', JSON.stringify(res.data.user))
           // 跳转到首页
           router.push('/')
+        } else if (res.code === 200 && !res.data) {
+          ElMessage.error('登录响应异常：缺失返回数据')
         }
       } catch (error: any) {
         console.error('登录失败:', error)

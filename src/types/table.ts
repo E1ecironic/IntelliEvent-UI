@@ -2,11 +2,13 @@
 export interface TableOption {
   propList: ColumnOption[]
   showIndexColumn?: boolean
+  indexWidth?: string | number
   showSelectColumn?: boolean
   showPagination?: boolean
   showSummary?: boolean
   rowKey?: string | ((row: any) => string)
   editConfig?: EditConfig
+  customTree?: boolean
 }
 
 export interface ColumnOption {

@@ -1,6 +1,6 @@
 import type { FormOption } from '@/types/form'
 import type { ColumnOption } from '@/types/table'
-import { Plus, Edit, User as UserIcon, SwitchButton, Delete } from '@element-plus/icons-vue'
+import { User as UserIcon, SwitchButton, Delete } from '@element-plus/icons-vue'
 
 // 组织架构相关类型
 export interface Organization {
@@ -48,11 +48,13 @@ export const searchFormConfig: FormOption[] = [
 
 // 表格配置
 export const tableConfig: { propList: ColumnOption[] } & Record<string, any> = {
+  customTree: true,
   rowKey: 'id',
-  treeProps: { children: 'children', hasChildren: 'hasChildren' },
+  treeProps: { children: 'children' },
+  defaultExpandAll: false,
   showSelectionColumn: false,
   showIndexColumn: false,
-  showPagination: false, // 树形表格通常一次性加载或懒加载，分页可能在顶层
+  showPagination: true,
   propList: [
     {
       prop: 'name',
@@ -63,37 +65,38 @@ export const tableConfig: { propList: ColumnOption[] } & Record<string, any> = {
     {
       prop: 'code',
       label: '组织编码',
-      width: '120',
+      minWidth: '120',
       align: 'center'
     },
     {
       prop: 'managerName',
       label: '负责人',
-      width: '120',
+      minWidth: '120',
       align: 'center'
     },
     {
       prop: 'connectPhone',
       label: '联系电话',
-      width: '120',
+      minWidth: '120',
       align: 'center'
     },
     {
       prop: 'status',
       label: '状态',
-      width: '100',
+      minWidth: '120',
       align: 'center',
       slotName: 'status'
     },
     {
-      prop: 'createTime',
+      prop: 'createdAt',
       label: '创建时间',
-      width: '180',
+      minWidth: '180',
       align: 'center'
     },
     {
       prop: 'handler',
       label: '操作',
+      width: '240',
       minWidth: '240',
       fixed: 'right',
       align: 'center',
@@ -101,14 +104,12 @@ export const tableConfig: { propList: ColumnOption[] } & Record<string, any> = {
         {
           label: '添加下级',
           type: 'primary',
-          icon: Plus,
           command: 'addChild',
           link: true
         },
         {
           label: '编辑',
           type: 'primary',
-          icon: Edit,
           command: 'edit',
           link: true
         },
@@ -132,6 +133,41 @@ export const tableConfig: { propList: ColumnOption[] } & Record<string, any> = {
     }
   ]
 }
+
+export const memberTableColumns: ColumnOption[] = [
+  {
+    prop: 'realName',
+    label: '姓名',
+    width: '120'
+  },
+  {
+    prop: 'position',
+    label: '职位',
+    width: '150'
+  },
+  {
+    prop: 'orgPathName',
+    label: '组织',
+    minWidth: '280'
+  },
+  {
+    prop: 'email',
+    label: '邮箱',
+    width: '180'
+  },
+  {
+    prop: 'phone',
+    label: '电话',
+    width: '180'
+  },
+  {
+    prop: 'handler',
+    label: '操作',
+    width: '180',
+    fixed: 'right',
+    slotName: 'handler'
+  }
+]
 
 // 表单配置
 export const formConfig: FormOption[] = [

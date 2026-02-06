@@ -35,15 +35,15 @@ export const userApi = {
   },
 
   ApiUpdateStatus: async function (id: number, status: number): Promise<ApiResponse<void>> {
-    return await request.put(`${baseUrl}/${id}/status`, { status })
+    return await request.put(`${baseUrl}`, { id, status })
   },
 
   ApiBatchUpdateStatus: async function (ids: number[], status: number): Promise<ApiResponse<void>> {
     return await request.put(`${baseUrl}/batch/status`, { ids, status })
   },
 
-  ApiResetPassword: async function (id: number, newPassword?: string): Promise<ApiResponse<void>> {
-    return await request.put(`${baseUrl}/${id}/password`, { newPassword })
+  ApiResetPassword: async function (id: number): Promise<ApiResponse<void>> {
+    return await request.post(`${baseUrl}/reset-password`, [id])
   },
 
   ApiGetUserRoles: async function (userId: number): Promise<ApiResponse<any[]>> {

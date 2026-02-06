@@ -49,9 +49,9 @@
             <el-icon><Key /></el-icon>
             <span>角色管理</span>
           </el-menu-item>
-          <el-menu-item index="/admin/api-test">
-            <el-icon><ToolsIcon /></el-icon>
-            <span>API测试</span>
+          <el-menu-item index="/admin/sys-config">
+            <el-icon><Setting /></el-icon>
+            <span>系统配置</span>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>

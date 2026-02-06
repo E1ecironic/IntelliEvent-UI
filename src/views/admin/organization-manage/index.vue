@@ -24,14 +24,17 @@
       :total="totalCount"
       :current-page="currentPage"
       :page-size="pageSize"
+      :height="tableHeight"
       style="margin-top: 16px;"
       :row-key="tableConfig.rowKey || 'id'"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
       @operation-click="handleOperationClick"
     >
       <!-- 状态插槽 -->
       <template #status="{ row }">
-        <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-          {{ row.status === 1 ? '正常' : '禁用' }}
+        <el-tag :type="(row as Organization).status === 1 ? 'success' : 'danger'" size="small">
+          {{ (row as Organization).status === 1 ? '正常' : '禁用' }}
         </el-tag>
       </template>
     </aimi-table>
@@ -47,7 +50,8 @@
         <aimi-form
           ref="orgFormRef"
           :form-items="formConfig"
-          v-model="orgForm"
+          :model-value="orgForm"
+          @update:model-value="value => Object.assign(orgForm, value)"
         >
           <template #parentOrg>
             <el-tree-select
@@ -72,7 +76,7 @@
     <aimi-dialog
       v-model="showUsersDialogFlag"
       title="组织成员管理"
-      width="800px"
+      width="70%"
       :show-footer="false"
       @close="currentOrgUsers = []"
     >
@@ -80,17 +84,18 @@
         <div class="org-users-container">
           <div class="users-header">
             <span>{{ currentOrg?.name }} - 成员列表</span>
-            <el-button type="primary" size="small" @click="showAddUserDialog = true" :icon="Plus">
-              添加成员
-            </el-button>
           </div>
           <el-table :data="currentOrgUsers" style="width: 100%" border stripe>
-            <el-table-column prop="userName" label="姓名" width="120" />
-            <el-table-column prop="position" label="职位" width="150" />
-            <el-table-column prop="email" label="邮箱" />
-            <el-table-column prop="phone" label="电话" width="120" />
-            <el-table-column label="操作" width="100" fixed="right">
-              <template #default="{ row }">
+            <el-table-column
+              v-for="column in memberTableColumns"
+              :key="column.prop"
+              :prop="column.prop"
+              :label="column.label"
+              :width="column.width"
+              :min-width="column.minWidth"
+              :fixed="column.fixed"
+            >
+              <template v-if="column.slotName === 'handler'" #default="{ row }">
                 <el-button type="danger" link size="small" @click="removeUserFromOrg(row)">
                   移除
                 </el-button>
@@ -104,13 +109,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus
 } from '@element-plus/icons-vue'
 import { organizationApi } from '@/api'
-import { tableConfig, formConfig, searchFormConfig } from './config'
+import { tableConfig, formConfig, searchFormConfig, memberTableColumns } from './config'
 import type { Organization } from './config'
 import type { User } from '@/views/admin/user-manage/config'
 import { useTable } from '@/hooks/useTable'
@@ -139,14 +144,33 @@ const {
   handleSearch,
   handleReset,
   tableRef
-} = useTable(organizationApi.ApiPageList, initialSearchParams, {
-  showPagination: false // 树形表格通常不需要常规分页，或者由后端控制
-})
+} = useTable(organizationApi.ApiPageList, initialSearchParams)
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  getTableData()
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+  getTableData()
+}
+
+const tableHeight = ref<number>(400)
+const updateTableHeight = () => {
+  nextTick(() => {
+    const tableElement = (tableRef.value as any)?.$el as HTMLElement | undefined
+    if (!tableElement) return
+    const rect = tableElement.getBoundingClientRect()
+    const height = window.innerHeight - rect.top - 24
+    tableHeight.value = Math.max(height, 260)
+  })
+}
 
 // 响应式数据
 const showAddDialog = ref<boolean>(false)
 const showUsersDialogFlag = ref<boolean>(false)
-const showAddUserDialog = ref<boolean>(false)
 const editingOrg = ref<Organization | null>(null)
 const currentOrg = ref<Organization | null>(null)
 const currentOrgUsers = ref<User[]>([])
@@ -191,27 +215,63 @@ const handleOperationClick = (command: string, row: Organization) => {
   }
 }
 
-// 展开/收起全部
 const toggleExpansion = (rows: Organization[], isExpanded: boolean) => {
-  // 获取 el-table 实例
-  const elTable = (tableRef.value as any)?.tableRef
-  if (!elTable) return
+  const table = tableRef.value as any
+  if (!table) return
 
   rows.forEach(row => {
-    elTable.toggleRowExpansion(row, isExpanded)
+    table.toggleRowExpansion?.(row, isExpanded)
     if (row.children && row.children.length > 0) {
       toggleExpansion(row.children, isExpanded)
     }
   })
 }
 
+const waitFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+const waitTransition = () => new Promise<void>(resolve => setTimeout(() => resolve(), 280))
+
+const expandByLevel = async (rows: Organization[]) => {
+  const table = tableRef.value as any
+  if (!table) return
+
+  const levels: Organization[][] = []
+  const walk = (items: Organization[], level: number) => {
+    if (!levels[level]) levels[level] = []
+    items.forEach(item => {
+      levels[level].push(item)
+      if (item.children && item.children.length > 0) {
+        walk(item.children, level + 1)
+      }
+    })
+  }
+
+  walk(rows, 0)
+
+  for (const levelRows of levels) {
+    levelRows.forEach(row => {
+      table.toggleRowExpansion?.(row, true)
+    })
+    await waitFrame()
+    await waitTransition()
+  }
+}
+
 const expandAll = () => {
-  toggleExpansion(organizationList.value, true)
+  expandByLevel(organizationList.value)
 }
 
 const collapseAll = () => {
   toggleExpansion(organizationList.value, false)
 }
+
+onMounted(() => {
+  updateTableHeight()
+  window.addEventListener('resize', updateTableHeight)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateTableHeight)
+})
 
 // 显示添加顶级组织对话框
 const showAddTopLevelDialog = () => {
@@ -256,10 +316,7 @@ const showEditDialog = (org: Organization) => {
 
 // 保存组织
 const saveOrganization = async () => {
-  const formInstance = orgFormRef.value?.getFormRef()
-  if (!formInstance) return
-  
-  const isValid = await formInstance.validate()
+  const isValid = await orgFormRef.value?.validate()
   if (!isValid) return
 
   try {
@@ -429,6 +486,10 @@ const removeUserFromOrg = async (user: User) => {
   display: flex;
   flex-direction: column;
   flex: 1;
+}
+
+.app-container :deep(.el-table__row td) {
+  padding: 14px 0;
 }
 
 .org-users-container {

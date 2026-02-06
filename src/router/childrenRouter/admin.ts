@@ -32,4 +32,14 @@ export const adminRoutes = [
       isShow: true
     }
   },
+  {
+    path: 'admin/sys-config',
+    name: 'SysConfigManage',
+    component: () => import('@/views/admin/sys-config/index.vue'),
+    meta: {
+      title: '系统配置',
+      icon: 'Setting',
+      isShow: true
+    }
+  }
 ]

@@ -8,9 +8,20 @@
       @search="handleSearch"
       @reset="handleReset"
     >
+      <template #orgSearch="{ searchForm, item }">
+        <el-tree-select
+          v-model="searchForm[item.field]"
+          :data="organizationOptions"
+          :props="{ label: 'fullName', value: 'id', children: 'children' }"
+          :placeholder="item.placeholder || '请选择组织'"
+          clearable
+          filterable
+          check-strictly
+          style="width: 100%"
+        />
+      </template>
       <template #toolbar>
         <el-button type="primary" @click="handleAdd" :icon="Plus">新增</el-button>
-        <el-button type="danger" :disabled="!selectedIds.length" @click="handleBatchDelete" :icon="Delete">批量删除</el-button>
       </template>
     </aimi-search-form>
 
@@ -23,63 +34,49 @@
       :total="total"
       :current-page="currentPage"
       :page-size="pageSize"
+      :height="tableHeight"
       style="margin-top: 16px;"
       :row-key="tableConfig.rowKey || 'id'"
-      @page-change="(page: number) => getTableData()"
-      @size-change="(size: number) => getTableData()"
-      @selection-change="handleSelectionChange"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+      @operation-click="handleOperationClick"
     >
       <!-- 用户信息插槽 -->
       <template #userInfo="{ row }">
         <div class="user-info">
-          <el-avatar :size="32" :style="{ backgroundColor: getAvatarColor(row.userName) }">
-            {{ (row.realName || row.userName || '').charAt(0) }}
+          <el-avatar :size="32" :style="{ backgroundColor: getAvatarColor((row as User).userName) }">
+            {{ ((row as User).realName || (row as User).userName || '').charAt(0) }}
           </el-avatar>
           <div class="user-details">
-            <div class="user-name">{{ row.realName || row.userName }}</div>
-            <div class="user-userName">@{{ row.userName }}</div>
+            <div class="user-name">{{ (row as User).realName || (row as User).userName }}</div>
+            <div class="user-userName">@{{ (row as User).userName }}</div>
           </div>
         </div>
       </template>
 
       <!-- 组织架构插槽 -->
       <template #organization="{ row }">
-        <el-tag type="info" size="small">
-          {{ row.organizationName || '-' }}
+        <el-tag type="info" size="small" v-if="getOrgName(row as User) !== '-'">
+          {{ getOrgName(row as User) }}
         </el-tag>
+        <span v-else>-</span>
       </template>
 
       <!-- 状态插槽 -->
       <template #status="{ row }">
-        <el-tag :type="getStatusType(row.status)" size="small">
-          {{ getStatusText(row.status) }}
+        <el-tag :type="getStatusType((row as User).status)" size="small">
+          {{ getStatusText((row as User).status) }}
         </el-tag>
       </template>
 
       <!-- 最后登录插槽 -->
       <template #lastLogin="{ row }">
-        <span class="login-info">{{ formatLoginTime(row.lastLoginAt) }}</span>
+        <span class="login-info">{{ formatLoginTime((row as User).lastLoginAt) || '-' }}</span>
       </template>
 
       <!-- 操作插槽 -->
-      <template #handler="{ row }">
-        <el-button type="primary" size="small" plain @click="handleEdit(row)">编辑</el-button>
-        <el-button type="warning" size="small" plain @click="handleAssignRole(row)">分配角色</el-button>
-        <el-dropdown @command="(command: string) => handleCommand(command, row)">
-          <el-button link type="info" size="small" style="margin-left: 8px">
-            更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="resetPassword">重置密码</el-dropdown-item>
-              <el-dropdown-item command="toggleStatus">
-                {{ row.status === 1 ? '禁用' : '启用' }}
-              </el-dropdown-item>
-              <el-dropdown-item command="delete" style="color: #f56c6c">删除</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </template>
+      <!-- 使用配置驱动的操作列，不再需要手动插槽 -->
+
     </aimi-table>
 
     <!-- 新增/编辑弹窗 -->
@@ -93,7 +90,8 @@
         <aimi-form
           ref="formRef"
           :form-items="formConfig"
-          v-model="formData"
+          :model-value="formData"
+          @update:model-value="value => Object.assign(formData, value)"
           @change="handleFormChange"
         >
   <template #orgSelect>
@@ -139,9 +137,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete, ArrowDown } from '@element-plus/icons-vue'
+import { Plus, ArrowDown } from '@element-plus/icons-vue'
 import { tableConfig, formConfig, searchFormConfig } from './config'
 import type { User, Role } from './config'
 import type { Organization } from '@/views/admin/organization-manage/config'
@@ -169,11 +167,28 @@ const {
   refresh
 } = useTable(userApi.ApiPageList)
 
-// 选中的数据
-const selectedIds = ref<number[]>([])
-const handleSelectionChange = (selection: User[]) => {
-  selectedIds.value = selection.map((item) => item.id!)
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  getTableData()
 }
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+  getTableData()
+}
+
+const tableHeight = ref<number>(400)
+const updateTableHeight = () => {
+  nextTick(() => {
+    const tableElement = (tableRef.value as any)?.$el as HTMLElement | undefined
+    if (!tableElement) return
+    const rect = tableElement.getBoundingClientRect()
+    const height = window.innerHeight - rect.top - 24
+    tableHeight.value = Math.max(height, 260)
+  })
+}
+
 
 // 弹窗逻辑
 const dialogVisible = ref(false)
@@ -237,9 +252,15 @@ const handleFormChange = (field: string, value: any) => {
   console.log(`字段 ${field} 变更:`, value)
 }
 
-// 更多操作
-const handleCommand = (command: string, row: User) => {
+// 统一操作处理
+const handleOperationClick = (command: string, row: User) => {
   switch (command) {
+    case 'edit':
+      handleEdit(row)
+      break
+    case 'assignRole':
+      handleAssignRole(row)
+      break
     case 'resetPassword':
       handleResetPassword(row)
       break
@@ -282,18 +303,6 @@ const handleDelete = (row: User) => {
   })
 }
 
-const handleBatchDelete = () => {
-  ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 个用户吗？`, '警告', {
-    type: 'error'
-  }).then(async () => {
-    const res = await userApi.ApiBatchDelete(selectedIds.value)
-    if (res.code === 200) {
-      ElMessage.success('批量删除成功')
-      selectedIds.value = []
-      refresh()
-    }
-  })
-}
 
 // 角色分配逻辑
 const roleDialogVisible = ref(false)
@@ -338,13 +347,17 @@ const handleSaveRoles = async () => {
 
 // 组织架构选项
 const organizationOptions = ref<Organization[]>([])
+const orgMap = ref<Record<string, string>>({})
 
 /**
- * 递归处理组织架构数据，生成全路径名称
+ * 递归处理组织架构数据，生成全路径名称并建立 ID 映射
  */
 const formatOrgData = (data: any[], parentName = ''): Organization[] => {
   return data.map((item) => {
     const fullName = parentName ? `${parentName}/${item.name}` : item.name
+    // 建立 ID 到全路径名称的映射
+    orgMap.value[item.id] = fullName
+    
     const newItem = {
       ...item,
       fullName
@@ -364,13 +377,27 @@ const getOrganizationOptions = async () => {
       // 兼容 list 和 records 字段
       const list = res.data.list || res.data.records || []
       console.log('原始组织列表:', list)
-      // 处理全路径
+      
+      // 清空旧映射
+      orgMap.value = {}
+      // 处理全路径并填充映射
       organizationOptions.value = formatOrgData(list)
       console.log('处理后的组织列表:', organizationOptions.value)
+      console.log('组织映射表:', orgMap.value)
     }
   } catch (error) {
     console.error('获取组织架构失败:', error)
   }
+}
+
+// 获取显示用的组织名称
+const getOrgName = (row: User) => {
+  if (row.orgPathName) return row.orgPathName
+  if (row.organizationName) return row.organizationName
+  if (row.organizationId && orgMap.value[row.organizationId]) {
+    return orgMap.value[row.organizationId]
+  }
+  return '-'
 }
 
 // 工具函数
@@ -406,6 +433,12 @@ const formatLoginTime = (time: string | undefined): string => {
 
 onMounted(() => {
   getOrganizationOptions()
+  updateTableHeight()
+  window.addEventListener('resize', updateTableHeight)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateTableHeight)
 })
 </script>
 

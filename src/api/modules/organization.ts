@@ -115,7 +115,7 @@ const organizationApi = {
    * 获取组织成员列表
    */
   getOrgUsers(orgId: number): Promise<ApiResponse<any[]>> {
-    return request.get(`/organizations/${orgId}/users`)
+    return request.get(`/user-organization/list-users-by-org/${orgId}`)
   },
 
   /**

@@ -14,8 +14,9 @@ export interface User {
   email?: string
   phone?: string
   status?: number
-  organizationId?: number
+  organizationId?: number | string
   organizationName?: string
+  orgPathName?: string
   position?: string
   avatar?: string
   lastLoginAt?: string
@@ -66,12 +67,11 @@ export const searchFormConfig: FormOption[] = [
     ]
   },
   {
-    field: 'createTime',
-    type: 'datepicker',
-    label: '创建时间',
-    dateType: 'daterange',
-    startPlaceholder: '开始日期',
-    endPlaceholder: '结束日期',
+    field: 'organizationId',
+    type: 'slot',
+    label: '所属组织',
+    placeholder: '请选择组织',
+    slotName: 'orgSearch',
     colSpan: 12
   }
 ]
@@ -86,10 +86,44 @@ export const tableConfig: TableOption = {
     { prop: 'organizationName', label: '所属组织', minWidth: '150', slotName: 'organization' },
     { prop: 'status', label: '状态', minWidth: '100', slotName: 'status' },
     { prop: 'lastLoginAt', label: '最后登录', minWidth: '180', slotName: 'lastLogin' },
-    { prop: 'handler', label: '操作', minWidth: '220', fixed: 'right', slotName: 'handler' }
+    {
+      prop: 'handler',
+      label: '操作',
+      width: '240',
+      minWidth: '240',
+      fixed: 'right',
+      align: 'center',
+      buttons: [
+        {
+          label: '编辑',
+          type: 'primary',
+          plain: true,
+          command: 'edit'
+        },
+        {
+          label: '分配角色',
+          type: 'warning',
+          plain: true,
+          command: 'assignRole'
+        },
+        {
+          label: '重置密码',
+          command: 'resetPassword'
+        },
+        {
+          label: (row: any) => (row.status === 1 ? '禁用' : '启用'),
+          command: 'toggleStatus'
+        },
+        {
+          label: '删除',
+          command: 'delete',
+          style: { color: '#f56c6c' }
+        }
+      ]
+    }
   ],
   showIndexColumn: true,
-  showSelectColumn: true,
+  showSelectColumn: false,
   showPagination: true,
   rowKey: 'id'
 }

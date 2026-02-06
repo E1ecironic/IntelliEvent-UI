@@ -72,6 +72,9 @@ service.interceptors.response.use(
           break
         case 403:
           message = '拒绝访问'
+          localStorage.removeItem('token')
+          localStorage.removeItem('userInfo')
+          window.location.hash = '#/login'
           break
         case 404:
           message = '请求地址不存在'
