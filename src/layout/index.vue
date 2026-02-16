@@ -12,48 +12,7 @@
         text-color="#fff"
         active-text-color="#409EFF"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><House /></el-icon>
-          <span>仪表盘</span>
-        </el-menu-item>
-        <el-menu-item index="/activities">
-          <el-icon><List /></el-icon>
-          <span>活动列表</span>
-        </el-menu-item>
-        <el-menu-item index="/creation">
-          <el-icon><Star /></el-icon>
-          <span>智能创作</span>
-        </el-menu-item>
-        <el-menu-item index="/reports">
-          <el-icon><TrendCharts /></el-icon>
-          <span>数据报告</span>
-        </el-menu-item>
-        <el-menu-item index="/knowledge">
-          <el-icon><Document /></el-icon>
-          <span>知识库</span>
-        </el-menu-item>
-        <el-sub-menu index="/admin">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/admin/organization">
-            <el-icon><OfficeBuilding /></el-icon>
-            <span>组织架构</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/users">
-            <el-icon><UserIcon /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/roles">
-            <el-icon><Key /></el-icon>
-            <span>角色管理</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/sys-config">
-            <el-icon><Setting /></el-icon>
-            <span>系统配置</span>
-          </el-menu-item>
-        </el-sub-menu>
+        <MenuTree :items="menuItems" />
       </el-menu>
     </div>
     
@@ -90,24 +49,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineComponent, h, resolveComponent } from 'vue'
+import type { PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useActivityStore } from '@/store/activity'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { authApi } from '@/api'
-import { 
-  House, 
-  List, 
-  Star, 
-  TrendCharts, 
-  Document, 
-  Setting, 
-  OfficeBuilding, 
-  User as UserIcon, 
-  Key, 
-  Tools as ToolsIcon,
-  Bell
-} from '@element-plus/icons-vue'
+import { Bell } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -119,6 +67,110 @@ const activeMenu = computed(() => route.path)
 const userInfo = computed(() => {
   const info = localStorage.getItem('userInfo')
   return info ? JSON.parse(info) : {}
+})
+
+const menuTree = computed(() => {
+  const raw = localStorage.getItem('menuTree')
+  if (!raw) return []
+  try {
+    return JSON.parse(raw) || []
+  } catch (error) {
+    return []
+  }
+})
+
+const normalizePath = (path: string) => {
+  let result = path || ''
+  if (result.includes('#')) {
+    const parts = result.split('#')
+    result = parts[parts.length - 1] || ''
+  }
+  result = result.split('?')[0] || ''
+  if (result && !result.startsWith('/')) {
+    result = `/${result}`
+  }
+  return result
+}
+
+const buildMenuItems = (items: any[], parentKey = ''): any[] => {
+  const source = Array.isArray(items) ? items : []
+  const map = new Map<string, any>()
+  source
+    .filter(item => !item?.type || item.type === 'MENU')
+    .filter(item => item?.status !== 0 && item?.visible !== 0)
+    .forEach((item, index) => {
+      const path = normalizePath(item?.path || '')
+      const baseKey = path || item?.id || item?.code || item?.name || index
+      const menuKey = `${parentKey}${baseKey}`
+      const children = Array.isArray(item?.children)
+        ? buildMenuItems(item.children, `${menuKey}-`)
+        : []
+      const icon =
+        typeof item?.icon === 'string' && /^[A-Za-z]/.test(item.icon) ? item.icon : ''
+      const existing = map.get(baseKey)
+      if (existing) {
+        const mergedChildren = [...(existing.children || []), ...children]
+        map.set(baseKey, {
+          ...existing,
+          ...item,
+          path,
+          menuKey,
+          icon,
+          children: buildMenuItems(mergedChildren, `${menuKey}-`)
+        })
+      } else {
+        map.set(baseKey, {
+          ...item,
+          path,
+          menuKey,
+          icon,
+          children
+        })
+      }
+    })
+  const result = Array.from(map.values())
+    .filter(item => item.path || (item.children && item.children.length > 0))
+  result.sort((a, b) => (a?.sort ?? 0) - (b?.sort ?? 0))
+  return result
+}
+
+const menuItems = computed(() => buildMenuItems(menuTree.value))
+
+const MenuTree = defineComponent({
+  name: 'MenuTree',
+  props: {
+    items: {
+      type: Array as PropType<any[]>,
+      default: () => []
+    }
+  },
+  setup(props) {
+    const renderIcon = (icon?: string) => {
+      if (!icon) return null
+      return h(resolveComponent('el-icon') as any, null, {
+        default: () => [h(resolveComponent(icon) as any)]
+      })
+    }
+
+    const renderItems = (items: any[]) => {
+      return items.map(item => {
+        const iconNode = renderIcon(item.icon)
+        const children = Array.isArray(item.children) ? item.children : []
+        if (children.length > 0) {
+          return h(resolveComponent('el-sub-menu') as any, { index: item.menuKey }, {
+            title: () => [iconNode, h('span', item.name || '')],
+            default: () => renderItems(children)
+          })
+        }
+        if (!item.path) return null
+        return h(resolveComponent('el-menu-item') as any, { index: item.path }, {
+          default: () => [iconNode, h('span', item.name || '')]
+        })
+      })
+    }
+
+    return () => renderItems(props.items)
+  }
 })
 
 const handleCommand = (command: string) => {
@@ -140,6 +192,8 @@ const handleLogout = () => {
       // 清除本地存储
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
+      localStorage.removeItem('menuTree')
+      localStorage.removeItem('permissions')
       
       ElMessage.success('已成功退出登录')
       // 跳转到登录页
@@ -149,6 +203,8 @@ const handleLogout = () => {
       // 即便接口报错，前端也强制退出
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
+      localStorage.removeItem('menuTree')
+      localStorage.removeItem('permissions')
       router.push('/login')
     }
   }).catch(() => {

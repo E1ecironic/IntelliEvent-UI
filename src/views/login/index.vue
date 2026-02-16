@@ -75,7 +75,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Key } from '@element-plus/icons-vue'
-import { authApi } from '@/api'
+import { authApi, sysPermissionApi } from '@/api'
 
 const router = useRouter()
 const loginFormRef = ref()
@@ -130,7 +130,24 @@ const handleLogin = async () => {
           localStorage.setItem('token', res.data.token)
           // 存储用户信息
           localStorage.setItem('userInfo', JSON.stringify(res.data.user))
-          // 跳转到首页
+          const userName = (res.data.user?.userName || res.data.user?.username || res.data.user?.account || '').toString().toLowerCase()
+          const isSuperAdmin = userName === 'sa'
+          const [menuRes, buttonRes] = await Promise.all([
+            sysPermissionApi.ApiUserMenuTree(),
+            sysPermissionApi.ApiButtons()
+          ])
+          if (menuRes.code === 200) {
+            localStorage.setItem('menuTree', JSON.stringify(menuRes.data || []))
+          }
+          if (isSuperAdmin) {
+            localStorage.setItem('permissions', JSON.stringify(['*']))
+          } else if (buttonRes.code === 200) {
+            const rawPermissions = Array.isArray(buttonRes.data) ? buttonRes.data : []
+            const permissionCodes = rawPermissions
+              .map(item => (typeof item === 'string' ? item : item?.code || item?.permission || item?.id))
+              .filter(Boolean)
+            localStorage.setItem('permissions', JSON.stringify(permissionCodes))
+          }
           router.push('/')
         } else if (res.code === 200 && !res.data) {
           ElMessage.error('登录响应异常：缺失返回数据')

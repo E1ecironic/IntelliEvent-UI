@@ -33,6 +33,36 @@ export const adminRoutes = [
     }
   },
   {
+    path: 'admin/permissions',
+    name: 'PermissionManage',
+    component: () => import('@/views/admin/permission-manage/index.vue'),
+    meta: {
+      title: '权限管理',
+      icon: 'Menu',
+      isShow: true
+    }
+  },
+  {
+    path: 'admin/role-authorize',
+    name: 'RoleAuthorize',
+    component: () => import('@/views/admin/role-authorize/index.vue'),
+    meta: {
+      title: '角色授权',
+      icon: 'Connection',
+      isShow: true
+    }
+  },
+  {
+    path: 'admin/user-role',
+    name: 'UserRole',
+    component: () => import('@/views/admin/user-role/index.vue'),
+    meta: {
+      title: '用户角色',
+      icon: 'User',
+      isShow: true
+    }
+  },
+  {
     path: 'admin/sys-config',
     name: 'SysConfigManage',
     component: () => import('@/views/admin/sys-config/index.vue'),
