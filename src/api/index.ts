@@ -10,6 +10,12 @@ export { default as publicApi } from './modules/publicApi'
 export { default as authApi } from './modules/auth'
 export { default as activityApi } from './modules/activity'
 export { default as aiApi } from './modules/ai'
+export { default as activityTaskApi } from './modules/activityTask'
+export { default as activityBudgetApi } from './modules/activityBudget'
+export { default as activityParticipantApi } from './modules/activityParticipant'
+export { default as activitySupplierApi } from './modules/activitySupplier'
+export { default as activityRiskApi } from './modules/activityRisk'
+export { default as activityScheduleApi } from './modules/activitySchedule'
 
 // 类型导出
 export * from '@/types/api'
