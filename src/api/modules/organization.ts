@@ -140,6 +140,13 @@ const organizationApi = {
     }
     // 如果找不到关系，也视为成功或忽略
     return Promise.resolve({ code: 200, message: '关系不存在或已删除', data: null } as any)
+  },
+
+  /**
+   * 获取当前用户所在组织的成员列表
+   */
+  getCurrentUserOrgMembers(): Promise<ApiResponse<any[]>> {
+    return request.get('/user-organization/current-user-org-members')
   }
 }
 

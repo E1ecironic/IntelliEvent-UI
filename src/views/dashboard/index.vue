@@ -6,7 +6,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon ongoing">
-              <el-icon size="40"><Calendar /></el-icon>
+              <el-icon size="40">
+                <Calendar />
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ ongoingActivities }}</div>
@@ -19,7 +21,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon pending">
-              <el-icon size="40"><Clock /></el-icon>
+              <el-icon size="40">
+                <Clock />
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ pendingTodos }}</div>
@@ -32,7 +36,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon total">
-              <el-icon size="40"><List /></el-icon>
+              <el-icon size="40">
+                <List />
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ totalActivities }}</div>
@@ -45,7 +51,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon budget">
-              <el-icon size="40"><Money /></el-icon>
+              <el-icon size="40">
+                <Money />
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ formatBudget(totalBudget) }}</div>
@@ -62,8 +70,10 @@
         <el-card>
           <div class="quick-create">
             <h3>快速创建活动</h3>
-            <el-button type="primary" size="large" @click="showCreateDialog = true">
-              <el-icon><Plus /></el-icon>
+            <el-button type="primary" size="large" @click="handleCreateActivityRedirect">
+              <el-icon>
+                <Plus />
+              </el-icon>
               创建新活动
             </el-button>
           </div>
@@ -82,12 +92,7 @@
             </div>
           </template>
           <div class="todo-list">
-            <div 
-              v-for="todo in pendingTodosList" 
-              :key="todo.id"
-              class="todo-item"
-              @click="handleTodoClick(todo)"
-            >
+            <div v-for="todo in pendingTodosList" :key="todo.id" class="todo-item" @click="handleTodoClick(todo)">
               <div class="todo-content">
                 <div class="todo-title">{{ todo.title }}</div>
                 <div class="todo-meta">
@@ -111,13 +116,8 @@
             </div>
           </template>
           <div class="notification-list">
-            <div 
-              v-for="notification in unreadNotificationsList" 
-              :key="notification.id"
-              class="notification-item"
-              :class="{ unread: !notification.read }"
-              @click="handleNotificationClick(notification)"
-            >
+            <div v-for="notification in unreadNotificationsList" :key="notification.id" class="notification-item"
+              :class="{ unread: !notification.read }" @click="handleNotificationClick(notification)">
               <div class="notification-icon">
                 <el-icon :size="20" :color="getNotificationColor(notification.type)">
                   <Warning v-if="notification.type === 'warning'" />
@@ -136,11 +136,7 @@
     </el-row>
 
     <!-- 创建活动对话框 -->
-    <el-dialog
-      v-model="showCreateDialog"
-      title="创建新活动"
-      width="600px"
-    >
+    <el-dialog v-model="showCreateDialog" title="创建新活动" width="600px">
       <el-form :model="createForm" label-width="100px">
         <el-form-item label="活动名称">
           <el-input v-model="createForm.name" placeholder="请输入活动名称" />
@@ -154,48 +150,25 @@
           </el-select>
         </el-form-item>
         <el-form-item label="活动时间">
-          <el-date-picker
-            v-model="createForm.date"
-            type="date"
-            placeholder="选择日期"
-          />
+          <el-date-picker v-model="createForm.date" type="date" placeholder="选择日期" />
         </el-form-item>
         <el-form-item label="活动地点">
           <el-input v-model="createForm.location" placeholder="请输入活动地点" />
         </el-form-item>
         <el-form-item label="预算">
-          <el-input-number
-            v-model="createForm.budget"
-            :min="0"
-            :step="1000"
-            placeholder="请输入预算"
-          />
+          <el-input-number v-model="createForm.budget" :min="0" :step="1000" placeholder="请输入预算" />
         </el-form-item>
         <el-form-item label="参与人数">
-          <el-input-number
-            v-model="createForm.participants"
-            :min="0"
-            placeholder="请输入参与人数"
-          />
+          <el-input-number v-model="createForm.participants" :min="0" placeholder="请输入参与人数" />
         </el-form-item>
         <el-form-item label="AI 需求">
-          <el-input
-            v-model="aiPrompt"
-            type="textarea"
-            :rows="2"
-            placeholder="请输入活动想法或目标，AI 会补全活动信息"
-          />
+          <el-input v-model="aiPrompt" type="textarea" :rows="2" placeholder="请输入活动想法或目标，AI 会补全活动信息" />
           <div class="ai-actions">
             <el-button type="primary" :loading="isGenerating" @click="handleAiGenerate">AI 生成</el-button>
           </div>
         </el-form-item>
         <el-form-item label="活动描述">
-          <el-input
-            v-model="createForm.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入活动描述"
-          />
+          <el-input v-model="createForm.description" type="textarea" :rows="3" placeholder="请输入活动描述" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -381,7 +354,7 @@ const handleCreateActivity = async () => {
 
   ElMessage.success('活动创建成功，正在跳转到活动列表...')
   showCreateDialog.value = false
-  
+
   createForm.value = {
     name: '',
     type: '',
@@ -392,9 +365,14 @@ const handleCreateActivity = async () => {
     description: ''
   }
   aiPrompt.value = ''
-  
+
   // 跳转到活动列表页面
-  router.push('/activity/list')
+  router.push('/activities')
+}
+
+const handleCreateActivityRedirect = () => {
+  // 跳转到活动列表页面并带上参数，指示需要打开新增对话框
+  router.push('/activities?action=create')
 }
 
 onMounted(() => {
@@ -483,7 +461,8 @@ onMounted(() => {
   margin-bottom: 0;
 }
 
-.todo-card, .notification-card {
+.todo-card,
+.notification-card {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
@@ -494,7 +473,8 @@ onMounted(() => {
   align-items: center;
 }
 
-.todo-list, .notification-list {
+.todo-list,
+.notification-list {
   max-height: 400px;
   overflow-y: auto;
 }

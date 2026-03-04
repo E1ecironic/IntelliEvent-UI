@@ -1,462 +1,262 @@
 <template>
-  <div class="activity-list">
-    <!-- 页面标题和操作栏 -->
-    <div class="page-header">
-      <h2>活动项目管理</h2>
-      <div class="header-actions">
-        <el-button type="primary" @click="handleCreateActivity">
-          <el-icon><Plus /></el-icon>
-          创建活动
-        </el-button>
-      </div>
-    </div>
-
-    <!-- 搜索和筛选栏 -->
-    <el-card class="filter-card">
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索活动名称、关键词"
-            clearable
-            @input="handleSearch"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filterStatus" placeholder="状态筛选" clearable @change="handleFilter">
-            <el-option label="全部" value="" />
-            <el-option label="待开始" value="待开始" />
-            <el-option label="进行中" value="进行中" />
-            <el-option label="已完成" value="已完成" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filterType" placeholder="类型筛选" clearable @change="handleFilter">
-            <el-option label="全部" value="" />
-            <el-option label="团建" value="团建" />
-            <el-option label="庆典" value="庆典" />
-            <el-option label="会议" value="会议" />
-            <el-option label="培训" value="培训" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-date-picker
-            v-model="filterDate"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            clearable
-            @change="handleFilter"
-          />
-        </el-col>
-        <el-col :span="4">
-          <el-button @click="handleResetFilter">重置</el-button>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <!-- 活动列表表格 -->
-    <el-card class="table-card">
-      <el-table
-        :data="filteredActivities"
-        style="width: 100%"
-        v-loading="loading"
-      >
-        <el-table-column prop="name" label="活动名称" min-width="200">
-          <template #default="{ row }">
-            <div class="activity-name">
-              <el-link type="primary" @click="handleViewDetail(row)">
-                {{ row.name }}
-              </el-link>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="type" label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getTypeTagType(row.type)">{{ row.type }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="date" label="日期" width="120">
-          <template #default="{ row }">
-            {{ formatDate(row.date) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="location" label="地点" width="120" />
-        <el-table-column prop="responsible" label="负责人" width="100" />
-        <el-table-column prop="budget" label="预算" width="120">
-          <template #default="{ row }">
-            <span class="budget">{{ formatBudget(row.budget) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusTagType(row.status)">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <el-button type="primary" link @click="handleViewDetail(row)">
-                详情
-              </el-button>
-              <el-button type="primary" link @click="handleEdit(row)">
-                编辑
-              </el-button>
-              <el-button type="primary" link @click="handleCopy(row)">
-                复制
-              </el-button>
-              <el-button type="danger" link @click="handleDelete(row)">
-                删除
-              </el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <!-- 分页 -->
-      <div class="pagination">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="totalActivities"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-    </el-card>
-
-    <!-- 创建/编辑活动对话框 -->
-    <el-dialog
-      v-model="showCreateDialog"
-      :title="isEdit ? '编辑活动' : '创建新活动'"
-      width="600px"
-    >
-      <el-form :model="createForm" label-width="100px">
-        <el-form-item label="活动名称">
-          <el-input v-model="createForm.name" placeholder="请输入活动名称" />
-        </el-form-item>
-        <el-form-item label="活动类型">
-          <el-select v-model="createForm.type" placeholder="请选择活动类型" style="width: 100%">
-            <el-option label="团建" value="团建" />
-            <el-option label="庆典" value="庆典" />
-            <el-option label="会议" value="会议" />
-            <el-option label="培训" value="培训" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="活动时间">
-          <el-date-picker
-            v-model="createForm.date"
-            type="date"
-            placeholder="选择日期"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="活动地点">
-          <el-input v-model="createForm.location" placeholder="请输入活动地点" />
-        </el-form-item>
-        <el-form-item label="预算">
-          <el-input-number
-            v-model="createForm.budget"
-            :min="0"
-            :step="1000"
-            placeholder="请输入预算"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="参与人数">
-          <el-input-number
-            v-model="createForm.participants"
-            :min="0"
-            placeholder="请输入参与人数"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="AI 需求" v-if="!isEdit">
-          <el-input
-            v-model="aiPrompt"
-            type="textarea"
-            :rows="2"
-            placeholder="请输入活动想法或目标，AI 会补全活动信息"
-          />
-          <div class="ai-actions">
-            <el-button type="primary" :loading="isGenerating" @click="handleAiGenerate">AI 生成</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="活动描述">
-          <el-input
-            v-model="createForm.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入活动描述"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showCreateDialog = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </span>
+  <div class="app-container">
+    <!-- 搜索区 -->
+    <aimi-search-form :form-items="searchFormConfig" :basic-fields="['name', 'type', 'status']" show-advanced-toggle
+      @search="handleSearch" @reset="handleReset">
+      <template #toolbar>
+        <el-button type="primary" @click="handleAdd" :icon="Plus">新增</el-button>
       </template>
-    </el-dialog>
+    </aimi-search-form>
+
+    <!-- 表格区 -->
+    <aimi-table ref="tableRef" v-bind="tableConfig" :loading="loading" :data="tableData" :total="total"
+      :current-page="currentPage" :page-size="pageSize" :height="tableHeight" style="margin-top: 16px;"
+      :row-key="tableConfig.rowKey || 'id'" @page-change="handlePageChange" @size-change="handleSizeChange"
+      @operation-click="handleOperationClick">
+      <!-- 类型插槽 -->
+      <template #type="{ row }">
+        <el-tag :type="getTypeTagType((row as Activity).type)" size="small">
+          {{ (row as Activity).type }}
+        </el-tag>
+      </template>
+
+      <!-- 状态插槽 -->
+      <template #status="{ row }">
+        <el-tag :type="getStatusTagType((row as Activity).status)" size="small">
+          {{ (row as Activity).status }}
+        </el-tag>
+      </template>
+
+      <!-- 预算插槽 -->
+      <template #budget="{ row }">
+        <span class="budget">{{ formatBudget((row as Activity).budget) }}</span>
+      </template>
+
+      <!-- 日期插槽 -->
+      <template #date="{ row }">
+        <span>{{ formatDate((row as Activity).date) }}</span>
+      </template>
+
+    </aimi-table>
+
+    <!-- 新增/编辑弹窗 -->
+    <aimi-dialog v-model="dialogVisible" :title="isEdit ? '编辑活动' : '新增活动'" width="600px" @confirm="handleConfirm">
+      <template #body>
+        <aimi-form ref="formRef" :form-items="formConfig" :model-value="formData"
+          @update:model-value="value => Object.assign(formData, value)" @change="handleFormChange">
+          <template #responsibleSelect>
+            <el-select v-model="formData.responsible" placeholder="请选择负责人" filterable style="width: 100%">
+              <el-option v-for="user in userList" :key="user.id" :label="user.realName || user.userName"
+                :value="user.id">
+                <span style="float: left">{{ user.realName || user.userName }}</span>
+                <span style="float: right; color: #8492a6; font-size: 13px">{{ user.userName }}</span>
+              </el-option>
+            </el-select>
+          </template>
+        </aimi-form>
+      </template>
+    </aimi-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, reactive } from 'vue'
-import { useActivityStore } from '@/store/activity'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useRouter } from 'vue-router'
-import { Plus, Search } from '@element-plus/icons-vue'
-import { activityApi, aiApi } from '@/api'
+import { Plus } from '@element-plus/icons-vue'
+import { tableConfig, formConfig } from './config'
 import type { Activity } from '@/types/activity'
+import { activityApi, organizationApi } from '@/api'
+import { useTable } from '@/hooks/useTable'
+import { AimiSearchForm, AimiTable, AimiDialog, AimiForm } from '@/components/Aimi'
+import type { User } from '@/views/admin/user-manage/config'
+import { useRoute, useRouter } from 'vue-router'
 
-const store = useActivityStore()
+// 表格逻辑
+const tableRef = ref()
+const route = useRoute()
 const router = useRouter()
+const {
+  loading,
+  tableData,
+  total,
+  currentPage,
+  pageSize,
+  getTableData,
+  handleSearch,
+  handleReset,
+  refresh
+} = useTable(activityApi.ApiPageList)
 
-// 搜索和筛选
-const searchKeyword = ref('')
-const filterStatus = ref('')
-const filterType = ref('')
-const filterDate = ref<[Date, Date] | ''>('')
-
-// 分页
-const currentPage = ref(1)
-const pageSize = ref(10)
-const loading = ref(false)
-const totalActivities = ref(0)
-
-// 对话框相关
-const showCreateDialog = ref(false)
-const isEdit = ref(false)
-const isGenerating = ref(false)
-const aiPrompt = ref('')
-const createForm = reactive({
-  id: '',
-  name: '',
-  type: '',
-  date: '' as any,
-  location: '',
-  budget: 0,
-  participants: 0,
-  description: ''
-})
-
-// 计算属性
-const filteredActivities = computed(() => {
-  let result = store.activities
-
-  // 关键词搜索
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(item => 
-      (item.name || '').toLowerCase().includes(keyword) ||
-      (item.description || '').toLowerCase().includes(keyword) ||
-      (item.location || '').toLowerCase().includes(keyword)
-    )
-  }
-
-  // 状态筛选
-  if (filterStatus.value) {
-    result = result.filter(item => item.status === filterStatus.value)
-  }
-
-  // 类型筛选
-  if (filterType.value) {
-    result = result.filter(item => item.type === filterType.value)
-  }
-
-  // 日期筛选
-  if (Array.isArray(filterDate.value) && filterDate.value.length === 2) {
-    const startDate = new Date(filterDate.value[0])
-    const endDate = new Date(filterDate.value[1])
-    result = result.filter(item => {
-      const itemDate = new Date(item.date || '')
-      return itemDate >= startDate && itemDate <= endDate
-    })
-  }
-
-  return result
-})
-
-const formatDateValue = (value: string | Date) => {
-  const date = typeof value === 'string' ? new Date(value) : value
-  if (Number.isNaN(date.getTime())) return ''
-  const year = date.getFullYear()
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  getTableData()
 }
 
-const getQueryParams = () => {
-  const params: Activity & { pageNum?: number; pageSize?: number } = {
-    pageNum: currentPage.value,
-    pageSize: pageSize.value,
-    name: searchKeyword.value || undefined,
-    status: filterStatus.value || undefined,
-    type: filterType.value || undefined
-  }
-  if (Array.isArray(filterDate.value) && filterDate.value.length === 2) {
-    params.dateStart = formatDateValue(filterDate.value[0])
-    params.dateEnd = formatDateValue(filterDate.value[1])
-  }
-  return params
-}
-
-const fetchActivities = async () => {
-  loading.value = true
-  try {
-    const res = await activityApi.ApiPageList(getQueryParams())
-    if (res.code === 200 && res.data) {
-      const list = res.data.list || res.data.records || []
-      store.setActivities(list)
-      totalActivities.value = res.data.total || list.length
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-// 获取类型标签样式
-const getTypeTagType = (type: string) => {
-  const types = {
-    '团建': 'success',
-    '庆典': 'warning',
-    '会议': 'info',
-    '培训': 'primary'
-  }
-  return types[type] || 'info'
-}
-
-// 获取状态标签样式
-const getStatusTagType = (status: string) => {
-  const types = {
-    '待开始': 'info',
-    '进行中': 'primary',
-    '已完成': 'success'
-  }
-  return types[status] || 'info'
-}
-
-// 格式化日期
-const formatDate = (date: string | Date | undefined) => {
-  if (!date) return '-'
-  return new Date(date).toLocaleDateString('zh-CN')
-}
-
-// 格式化预算
-const formatBudget = (budget: number | undefined) => {
-  if (!budget) return '¥0'
-  return `¥${(budget / 10000).toFixed(1)}万`
-}
-
-// 搜索处理
-const handleSearch = () => {
-  currentPage.value = 1
-  fetchActivities()
-}
-
-// 筛选处理
-const handleFilter = () => {
-  currentPage.value = 1
-  fetchActivities()
-}
-
-// 重置筛选
-const handleResetFilter = () => {
-  searchKeyword.value = ''
-  filterStatus.value = ''
-  filterType.value = ''
-  filterDate.value = ''
-  currentPage.value = 1
-  fetchActivities()
-}
-
-// 分页处理
 const handleSizeChange = (size: number) => {
   pageSize.value = size
   currentPage.value = 1
-  fetchActivities()
+  getTableData()
 }
 
-const handleCurrentChange = (page: number) => {
-  currentPage.value = page
-  fetchActivities()
+const tableHeight = ref<number>(400)
+const updateTableHeight = () => {
+  nextTick(() => {
+    const tableElement = (tableRef.value as any)?.$el as HTMLElement | undefined
+    if (!tableElement) return
+    const rect = tableElement.getBoundingClientRect()
+    const height = window.innerHeight - rect.top - 24
+    tableHeight.value = Math.max(height, 260)
+  })
 }
 
-// 操作处理
-const handleViewDetail = (row: Activity) => {
-  if (row?.id) {
-    store.setCurrentActivity(row)
-    router.push(`/activity/${row.id}`)
+// 搜索表单配置
+const searchFormConfig = [
+  {
+    field: 'name',
+    type: 'input',
+    label: '活动名称',
+    placeholder: '请输入活动名称'
+  },
+  {
+    field: 'type',
+    type: 'select',
+    label: '活动类型',
+    placeholder: '请选择活动类型',
+    options: [
+      { label: '全部', value: '' },
+      { label: '团建', value: '团建' },
+      { label: '庆典', value: '庆典' },
+      { label: '会议', value: '会议' },
+      { label: '培训', value: '培训' }
+    ]
+  },
+  {
+    field: 'status',
+    type: 'select',
+    label: '状态',
+    placeholder: '请选择状态',
+    options: [
+      { label: '全部', value: '' },
+      { label: '待开始', value: '待开始' },
+      { label: '进行中', value: '进行中' },
+      { label: '已完成', value: '已完成' }
+    ]
+  },
+  {
+    field: 'date',
+    type: 'datepicker',
+    label: '活动日期',
+    placeholder: '选择日期范围',
+    dateType: 'daterange',
+    valueFormat: 'YYYY-MM-DD',
+    rangeSeparator: '至',
+    startPlaceholder: '开始日期',
+    endPlaceholder: '结束日期',
+    isRange: true
   }
+]
+
+// 弹窗逻辑
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const formRef = ref()
+const formData = reactive<Activity>({
+  id: undefined,
+  name: '',
+  type: '',
+  date: '',
+  timeRange: '',
+  location: '',
+  responsible: '',
+  participants: 0,
+  budget: 0,
+  status: '待开始',
+  description: ''
+})
+
+// 组织成员列表
+const userList = ref<User[]>([])
+const loadUserList = async () => {
+  try {
+    const res = await organizationApi.getCurrentUserOrgMembers()
+    if (res.code === 200 && res.data) {
+      userList.value = res.data
+      console.log('组织用户列表:', userList.value)
+    }
+  } catch (error) {
+    console.error('获取组织用户列表失败:', error)
+  }
+}
+
+const handleAdd = () => {
+  isEdit.value = false
+  Object.assign(formData, {
+    id: undefined,
+    name: '',
+    type: '',
+    date: '',
+    timeRange: '',
+    location: '',
+    responsible: '',
+    participants: 0,
+    budget: 0,
+    status: '待开始',
+    description: ''
+  })
+  loadUserList()
+  dialogVisible.value = true
 }
 
 const handleEdit = (row: Activity) => {
   isEdit.value = true
-  createForm.id = row.id || ''
-  createForm.name = row.name || ''
-  createForm.type = row.type || ''
-  createForm.date = row.date ? new Date(row.date) : ''
-  createForm.location = row.location || ''
-  createForm.budget = row.budget || 0
-  createForm.participants = row.participants || 0
-  createForm.description = row.description || ''
-  showCreateDialog.value = true
+  Object.assign(formData, { ...row })
+  loadUserList()
+  dialogVisible.value = true
 }
 
-const handleAiGenerate = async () => {
-  isGenerating.value = true
+const handleConfirm = async () => {
+  const isValid = await formRef.value?.validate()
+  if (!isValid) return
+
   try {
-    const res = await aiApi.generateStructuredPlan({
-      prompt: aiPrompt.value,
-      name: createForm.name || undefined,
-      type: createForm.type || undefined,
-      date: formatDateValue(createForm.date),
-      location: createForm.location || undefined,
-      participants: createForm.participants || undefined,
-      budget: createForm.budget || undefined,
-      description: createForm.description || undefined
-    })
-    if (res.code === 200 && res.data) {
-      const plan = res.data
-      if (plan.name) createForm.name = plan.name
-      if (plan.type) createForm.type = plan.type
-      if (plan.date) createForm.date = new Date(plan.date)
-      if (plan.location) createForm.location = plan.location
-      if (plan.participants !== undefined) createForm.participants = plan.participants
-      if (plan.budget !== undefined) createForm.budget = plan.budget
-      if (plan.description) createForm.description = plan.description
-      if (!plan.description && plan.rawText) createForm.description = plan.rawText
-      ElMessage.success('AI 已生成活动信息')
+    const res = await activityApi.ApiSaveOrUpdate(formData)
+    if (res.code === 200) {
+      ElMessage.success(isEdit.value ? '修改成功' : '新增成功')
+      dialogVisible.value = false
+      refresh()
     }
-  } finally {
-    isGenerating.value = false
+  } catch (error) {
+    console.error(error)
   }
 }
 
-const handleSubmit = async () => {
-  if (!createForm.name || !createForm.type) {
-    ElMessage.warning('请填写必要信息')
-    return
-  }
+const handleFormChange = (field: string, value: any) => {
+  console.log(`字段 ${field} 变更:`, value)
+}
 
-  const payload = {
-    ...createForm,
-    date: formatDateValue(createForm.date),
-    status: isEdit.value ? undefined : '待开始'
+// 统一操作处理
+const handleOperationClick = (command: string, row: Activity) => {
+  switch (command) {
+    case 'detail':
+      handleDetail(row)
+      break
+    case 'edit':
+      handleEdit(row)
+      break
+    case 'copy':
+      handleCopy(row)
+      break
+    case 'delete':
+      handleDelete(row)
+      break
   }
-  const res = await activityApi.ApiSaveOrUpdate(payload)
-  if (res.code === 200) {
-    ElMessage.success(isEdit.value ? '编辑成功' : '创建成功')
-    showCreateDialog.value = false
-    fetchActivities()
+}
+
+const handleDetail = (row: Activity) => {
+  console.log('查看详情', row)
+  // 跳转到详情页
+  if (row.id) {
+    router.push(`/activity/${row.id}`)
   }
 }
 
@@ -466,10 +266,14 @@ const handleCopy = async (row: Activity) => {
     ...rest,
     name: `${row.name} (复制)`
   }
-  const res = await activityApi.ApiSaveOrUpdate(payload)
-  if (res.code === 200) {
-    ElMessage.success('复制成功')
-    fetchActivities()
+  try {
+    const res = await activityApi.ApiSaveOrUpdate(payload)
+    if (res.code === 200) {
+      ElMessage.success('复制成功')
+      refresh()
+    }
+  } catch (error) {
+    console.error(error)
   }
 }
 
@@ -484,88 +288,77 @@ const handleDelete = async (row: Activity) => {
         type: 'warning'
       }
     )
-    
+
     if (row.id) {
       const res = await activityApi.ApiDelete(row.id)
       if (res.code === 200) {
-        store.deleteActivity(row.id)
-        fetchActivities()
         ElMessage.success('删除成功')
+        refresh()
       }
     }
   } catch {
   }
 }
 
-const handleCreateActivity = () => {
-  isEdit.value = false
-  aiPrompt.value = ''
-  Object.assign(createForm, {
-    id: '',
-    name: '',
-    type: '',
-    date: '',
-    location: '',
-    budget: 0,
-    participants: 0,
-    description: ''
-  })
-  showCreateDialog.value = true
+// 工具函数
+const getTypeTagType = (type: string) => {
+  const types = {
+    '团建': 'success',
+    '庆典': 'warning',
+    '会议': 'info',
+    '培训': 'primary'
+  }
+  return types[type] || 'info'
+}
+
+const getStatusTagType = (status: string) => {
+  const types = {
+    '待开始': 'info',
+    '进行中': 'primary',
+    '已完成': 'success'
+  }
+  return types[status] || 'info'
+}
+
+const formatDate = (date: string | undefined) => {
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString('zh-CN')
+}
+
+const formatBudget = (budget: number | undefined) => {
+  if (!budget) return '¥0'
+  return `¥${(budget / 10000).toFixed(1)}万`
 }
 
 onMounted(() => {
-  fetchActivities()
+  updateTableHeight()
+  window.addEventListener('resize', updateTableHeight)
+
+  // 检查路由参数，是否需要打开新增对话框
+  const action = route.query.action
+  if (action === 'create') {
+    handleAdd()
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateTableHeight)
 })
 </script>
 
-<style scoped>
-.activity-list {
+<style scoped lang="scss">
+.app-container {
   padding: 20px;
-}
-
-.page-header {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  color: #303133;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
-
-.table-card {
-  border-radius: 8px;
-}
-
-.activity-name {
-  font-weight: 500;
+  flex-direction: column;
+  flex: 1;
 }
 
 .budget {
   color: #67c23a;
   font-weight: 500;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
 }
 </style>

@@ -17,6 +17,7 @@ export interface Activity {
   budget?: number
   status?: string
   responsible?: string
+  responsibleName?: string
   description?: string
   createdAt?: string
   updatedAt?: string

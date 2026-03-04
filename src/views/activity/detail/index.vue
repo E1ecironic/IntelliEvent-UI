@@ -17,7 +17,7 @@
         </el-descriptions-item>
         <el-descriptions-item label="活动时间">{{ formatDate(currentActivity?.date) }}</el-descriptions-item>
         <el-descriptions-item label="活动地点">{{ currentActivity?.location }}</el-descriptions-item>
-        <el-descriptions-item label="负责人">{{ currentActivity?.responsible }}</el-descriptions-item>
+        <el-descriptions-item label="负责人">{{ currentActivity?.responsibleName || currentActivity?.responsible }}</el-descriptions-item>
         <el-descriptions-item label="参与人数">{{ currentActivity?.participants }}人</el-descriptions-item>
         <el-descriptions-item label="预算">
           <span class="budget">{{ formatBudget(currentActivity?.budget) }}</span>
