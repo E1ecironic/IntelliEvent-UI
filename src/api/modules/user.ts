@@ -26,40 +26,26 @@ export const userApi = {
     }
   },
 
-  ApiDelete: async function (id: number): Promise<ApiResponse<void>> {
+  ApiDelete: async function (id: number | string): Promise<ApiResponse<void>> {
     return await request.delete(`${baseUrl}/${id}`)
   },
 
-  ApiBatchDelete: async function (ids: number[]): Promise<ApiResponse<void>> {
-    return await request.delete(`${baseUrl}/batch`, { data: { ids } })
+  // 批量接口后端暂不支持，已移除
+  // ApiBatchDelete: async function (ids: number[]): Promise<ApiResponse<void>> { ... }
+
+  ApiUpdateStatus: async function (id: number | string, status: number): Promise<ApiResponse<void>> {
+    // 修改为 query 参数传递，由于封装的 request.put 不支持 config 参数，这里拼接到 URL
+    return await request.put(`${baseUrl}/status?userId=${id}&status=${status}`)
   },
 
-  ApiUpdateStatus: async function (id: number, status: number): Promise<ApiResponse<void>> {
-    return await request.put(`${baseUrl}`, { id, status })
-  },
+  // 批量接口后端暂不支持，已移除
+  // ApiBatchUpdateStatus: async function (ids: number[], status: number): Promise<ApiResponse<void>> { ... }
 
-  ApiBatchUpdateStatus: async function (ids: number[], status: number): Promise<ApiResponse<void>> {
-    return await request.put(`${baseUrl}/batch/status`, { ids, status })
-  },
-
-  ApiResetPassword: async function (id: number): Promise<ApiResponse<void>> {
+  ApiResetPassword: async function (id: number | string): Promise<ApiResponse<void>> {
     return await request.post(`${baseUrl}/reset-password`, [id])
   },
 
-  ApiGetUserRoles: async function (userId: number): Promise<ApiResponse<any[]>> {
-    return await request.get(`${baseUrl}/${userId}/roles`)
-  },
-
-  ApiGetAllRoles: async function (): Promise<ApiResponse<any[]>> {
-    // 这里模拟获取所有角色，实际应调用角色模块API
-    return await request.get('/roles/list')
-  },
-
-  ApiAssignRoles: async function (userId: number, roleIds: number[]): Promise<ApiResponse<void>> {
-    return await request.put(`${baseUrl}/${userId}/roles`, { roleIds })
-  },
-
-  ApiGetById: async function (id: number): Promise<ApiResponse<User>> {
+  ApiGetById: async function (id: number | string): Promise<ApiResponse<User>> {
     return await request.get(`${baseUrl}/${id}`)
   }
 }

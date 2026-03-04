@@ -178,6 +178,17 @@
             placeholder="请输入参与人数"
           />
         </el-form-item>
+        <el-form-item label="AI 需求">
+          <el-input
+            v-model="aiPrompt"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入活动想法或目标，AI 会补全活动信息"
+          />
+          <div class="ai-actions">
+            <el-button type="primary" :loading="isGenerating" @click="handleAiGenerate">AI 生成</el-button>
+          </div>
+        </el-form-item>
         <el-form-item label="活动描述">
           <el-input
             v-model="createForm.description"
@@ -197,15 +208,30 @@
   </div>
 </template>
 
-<script setup>
-import { computed, ref } from 'vue'
+<script setup lang="ts">
+import { computed, ref, onMounted } from 'vue'
 import { useActivityStore } from '@/store/activity'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
+import { activityApi, aiApi } from '@/api'
 
 const store = useActivityStore()
 const router = useRouter()
+
+type TodoItem = {
+  id: string | number
+  title: string
+  status?: string
+  priority?: string
+}
+
+type NotificationItem = {
+  id: string | number
+  title: string
+  type?: string
+  read?: boolean
+}
 
 // 统计数据
 const totalActivities = computed(() => store.totalActivities)
@@ -228,14 +254,17 @@ const createForm = ref({
   participants: 0,
   description: ''
 })
+const aiPrompt = ref('')
+const isGenerating = ref(false)
 
 // 格式化预算
-const formatBudget = (budget) => {
+const formatBudget = (budget: number | null | undefined) => {
+  if (budget === null || budget === undefined) return '¥0'
   return `¥${(budget / 10000).toFixed(1)}万`
 }
 
 // 获取优先级类型
-const getPriorityType = (priority) => {
+const getPriorityType = (priority: string) => {
   const types = {
     high: 'danger',
     medium: 'warning',
@@ -245,7 +274,7 @@ const getPriorityType = (priority) => {
 }
 
 // 获取优先级文本
-const getPriorityText = (priority) => {
+const getPriorityText = (priority: string) => {
   const texts = {
     high: '高',
     medium: '中',
@@ -255,7 +284,7 @@ const getPriorityText = (priority) => {
 }
 
 // 获取通知颜色
-const getNotificationColor = (type) => {
+const getNotificationColor = (type: string) => {
   const colors = {
     warning: '#E6A23C',
     info: '#409EFF',
@@ -265,13 +294,13 @@ const getNotificationColor = (type) => {
 }
 
 // 处理待办事项点击
-const handleTodoClick = (todo) => {
+const handleTodoClick = (todo: TodoItem) => {
   ElMessage.success(`处理待办: ${todo.title}`)
   store.updateTodoStatus(todo.id, 'completed')
 }
 
 // 处理通知点击
-const handleNotificationClick = (notification) => {
+const handleNotificationClick = (notification: NotificationItem) => {
   store.markNotificationRead(notification.id)
   ElMessage.info(`查看通知: ${notification.title}`)
 }
@@ -286,18 +315,73 @@ const handleNotificationAction = () => {
   ElMessage.info('跳转到通知中心')
 }
 
-// 创建活动
-const handleCreateActivity = () => {
+const formatDateValue = (value: string | Date | undefined) => {
+  if (!value) return ''
+  const date = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const loadActivities = async () => {
+  const res = await activityApi.ApiPageList({ pageNum: 1, pageSize: 1000 })
+  if (res.code === 200 && res.data) {
+    const list = res.data.list || res.data.records || []
+    store.setActivities(list)
+  }
+}
+
+const handleAiGenerate = async () => {
+  isGenerating.value = true
+  try {
+    const res = await aiApi.generateStructuredPlan({
+      prompt: aiPrompt.value,
+      name: createForm.value.name || undefined,
+      type: createForm.value.type || undefined,
+      date: formatDateValue(createForm.value.date),
+      location: createForm.value.location || undefined,
+      participants: createForm.value.participants || undefined,
+      budget: createForm.value.budget || undefined,
+      description: createForm.value.description || undefined
+    })
+    if (res.code === 200 && res.data) {
+      const plan = res.data
+      const nextForm = { ...createForm.value }
+      if (plan.name) nextForm.name = plan.name
+      if (plan.type) nextForm.type = plan.type
+      if (plan.date) nextForm.date = new Date(plan.date)
+      if (plan.location) nextForm.location = plan.location
+      if (plan.participants !== undefined) nextForm.participants = plan.participants
+      if (plan.budget !== undefined) nextForm.budget = plan.budget
+      if (plan.description) nextForm.description = plan.description
+      if (!plan.description && plan.rawText) nextForm.description = plan.rawText
+      createForm.value = nextForm
+      ElMessage.success('AI 已生成活动信息')
+    }
+  } finally {
+    isGenerating.value = false
+  }
+}
+
+const handleCreateActivity = async () => {
   if (!createForm.value.name || !createForm.value.type) {
     ElMessage.warning('请填写必要信息')
     return
   }
-  
-  store.addActivity(createForm.value)
+
+  const payload = {
+    ...createForm.value,
+    date: formatDateValue(createForm.value.date),
+    status: '待开始'
+  }
+  const res = await activityApi.ApiSaveOrUpdate(payload)
+  if (res.code !== 200) return
+
+  ElMessage.success('活动创建成功，正在跳转到活动列表...')
   showCreateDialog.value = false
-  ElMessage.success('活动创建成功')
   
-  // 重置表单
   createForm.value = {
     name: '',
     type: '',
@@ -307,7 +391,15 @@ const handleCreateActivity = () => {
     participants: 0,
     description: ''
   }
+  aiPrompt.value = ''
+  
+  // 跳转到活动列表页面
+  router.push('/activity/list')
 }
+
+onMounted(() => {
+  loadActivities()
+})
 </script>
 
 <style scoped>
@@ -488,5 +580,9 @@ const handleCreateActivity = () => {
 .notification-time {
   font-size: 12px;
   color: #909399;
+}
+
+.ai-actions {
+  margin-top: 8px;
 }
 </style>

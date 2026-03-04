@@ -9,8 +9,8 @@ export default {
    * @returns 返回上传结果和URL
    */
 uploadAvatar(formData: FormData): Promise<ApiResponse<{ url: string }>> {
-  return request.upload('/users/avatar', formData)
-},
+    return request.upload('/sys-file/upload', formData)
+  },
 
 
 }

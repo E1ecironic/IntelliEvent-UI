@@ -357,11 +357,13 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useActivityStore } from '@/store/activity'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
+import { activityApi } from '@/api'
+import type { Activity } from '@/types/activity'
 import {
   Check,
   Refresh,
@@ -459,12 +461,18 @@ const remainingBudget = computed(() =>
 )
 
 // 初始化
+const fetchActivity = async (activityId: string) => {
+  const res = await activityApi.ApiGetById(activityId)
+  if (res.code === 200 && res.data) {
+    store.setCurrentActivity(res.data as Activity)
+    activityForm.value.description = res.data.description || ''
+  }
+}
+
 onMounted(() => {
-  const activityId = parseInt(route.params.id)
-  store.setCurrentActivity(activityId)
-  
-  if (currentActivity.value) {
-    activityForm.value.description = currentActivity.value.description || ''
+  const activityId = String(route.params.id || '')
+  if (activityId) {
+    fetchActivity(activityId)
   }
 })
 
@@ -700,8 +708,13 @@ const applyEmergencyPlan = (risk) => {
 }
 
 // 保存活动
-const handleSave = () => {
-  if (currentActivity.value) {
+const handleSave = async () => {
+  if (!currentActivity.value?.id) return
+  const res = await activityApi.ApiSaveOrUpdate({
+    id: currentActivity.value.id,
+    description: activityForm.value.description
+  })
+  if (res.code === 200) {
     store.updateActivity(currentActivity.value.id, {
       description: activityForm.value.description
     })

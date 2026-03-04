@@ -143,7 +143,7 @@ import { Plus, ArrowDown } from '@element-plus/icons-vue'
 import { tableConfig, formConfig, searchFormConfig } from './config'
 import type { User, Role } from './config'
 import type { Organization } from '@/views/admin/organization-manage/config'
-import { userApi, organizationApi } from '@/api'
+import { userApi, organizationApi, sysRoleApi, sysUserRoleApi } from '@/api'
 import { useTable } from '@/hooks/useTable'
 import {
   AimiSearch,
@@ -307,19 +307,19 @@ const handleDelete = (row: User) => {
 // 角色分配逻辑
 const roleDialogVisible = ref(false)
 const roleList = ref<Role[]>([])
-const selectedRoleIds = ref<number[]>([])
-const currentUserId = ref<number>()
+const selectedRoleIds = ref<(number | string)[]>([])
+const currentUserId = ref<number | string>()
 
 const handleAssignRole = async (row: User) => {
   currentUserId.value = row.id
   try {
     const [roleRes, userRoleRes] = await Promise.all([
-      userApi.ApiGetAllRoles(),
-      userApi.ApiGetUserRoles(row.id!)
+      sysRoleApi.ApiPageList({ pageNum: 1, pageSize: 1000 }),
+      sysUserRoleApi.ApiGetUserRoles(row.id!)
     ])
 
     if (roleRes.code === 200) {
-      roleList.value = roleRes.data || []
+      roleList.value = roleRes.data.list || roleRes.data.records || []
     }
 
     if (userRoleRes.code === 200) {
@@ -337,7 +337,7 @@ const handleAssignRole = async (row: User) => {
 
 const handleSaveRoles = async () => {
   if (!currentUserId.value) return
-  const res = await userApi.ApiAssignRoles(currentUserId.value, selectedRoleIds.value)
+  const res = await sysUserRoleApi.ApiAssignRoles({ userId: currentUserId.value, roleIds: selectedRoleIds.value })
   if (res.code === 200) {
     ElMessage.success('分配成功')
     roleDialogVisible.value = false

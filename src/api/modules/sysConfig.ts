@@ -1,6 +1,6 @@
 import request from './request'
 import type { ApiResponse, PageResponse } from '@/types/api'
-import type { SysConfig } from '@/types/sysConfig'
+import type { SysConfig, SysConfigModule } from '@/types/sysConfig'
 
 const baseUrl = '/sys-config'
 
@@ -9,7 +9,11 @@ export const sysConfigApi = {
    * 分页获取系统配置
    */
   ApiPageList: async function (params: any): Promise<ApiResponse<PageResponse<SysConfig>>> {
-    return await request.get(`${baseUrl}/page`, { params })
+    return await request.get(`${baseUrl}/page`, params)
+  },
+
+  ApiModuleList: async function (params: any): Promise<ApiResponse<SysConfigModule[]>> {
+    return await request.get(`${baseUrl}/modules`, params)
   },
 
   /**

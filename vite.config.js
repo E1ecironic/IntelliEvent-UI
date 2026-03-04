@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/intellievent': {
-        target: 'http://localhost:8080',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         // 如果后端接口没有 /intellievent 前缀，则需要 rewrite
         // rewrite: (path) => path.replace(/^\/intellievent/, '')

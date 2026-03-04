@@ -1,15 +1,15 @@
 <template>
   <div class="app-container">
-    <el-row :gutter="20">
-      <el-col :span="10">
-        <aimi-search-form
-          :form-items="searchFormConfig"
-          :basic-fields="['name', 'code']"
-          show-advanced-toggle
-          @search="handleSearch"
-          @reset="handleReset"
-        />
+    <aimi-search-form
+      :form-items="searchFormConfig"
+      :basic-fields="['name', 'code']"
+      show-advanced-toggle
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
+    <el-row :gutter="20">
+      <el-col :span="16">
         <aimi-table
           ref="tableRef"
           v-bind="tableConfig"
@@ -31,7 +31,7 @@
           </template>
         </aimi-table>
       </el-col>
-      <el-col :span="14">
+      <el-col :span="8">
         <el-card shadow="never" class="permission-tree">
           <div class="tree-header">
             <div class="tree-title">

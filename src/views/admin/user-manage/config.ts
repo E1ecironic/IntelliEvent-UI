@@ -8,7 +8,7 @@ import type { FormOption } from '@/types/form'
 
 // 用户相关类型
 export interface User {
-  id?: number
+  id?: number | string
   userName?: string
   realName?: string
   email?: string
@@ -28,7 +28,7 @@ export interface User {
 
 // 角色相关类型
 export interface Role {
-  id: number
+  id: number | string
   name: string
   code: string
   description?: string
@@ -149,7 +149,7 @@ export const formConfig: FormOption[] = [
     colSpan: 24,
     rules: [{ required: true, message: '真实姓名不能为空', trigger: 'blur' }]
   },
-  /* {
+  {
     field: 'password',
     type: 'input',
     label: '密码',
@@ -160,7 +160,7 @@ export const formConfig: FormOption[] = [
       { required: true, message: '密码不能为空', trigger: 'blur' },
       { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,20}$/, message: '密码必须包含大小写字母和数字，长度8-20位', trigger: 'blur' }
     ]
-  }, */
+  },
   {
     field: 'email',
     type: 'input',

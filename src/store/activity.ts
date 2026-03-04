@@ -21,7 +21,15 @@ export const useActivityStore = defineStore('activity', () => {
     activities.value = data
   }
   
-  const setCurrentActivity = (activity: Activity | null) => {
+  const setCurrentActivity = (activity: Activity | string | null) => {
+    if (activity === null) {
+      currentActivity.value = null
+      return
+    }
+    if (typeof activity === 'string') {
+      currentActivity.value = activities.value.find(item => item.id === activity) || null
+      return
+    }
     currentActivity.value = activity
   }
   
@@ -29,14 +37,14 @@ export const useActivityStore = defineStore('activity', () => {
     activities.value.push(activity)
   }
   
-  const updateActivity = (id: number, updates: Partial<Activity>) => {
+  const updateActivity = (id: string, updates: Partial<Activity>) => {
     const index = activities.value.findIndex(item => item.id === id)
     if (index !== -1) {
       activities.value[index] = { ...activities.value[index], ...updates }
     }
   }
   
-  const deleteActivity = (id: number) => {
+  const deleteActivity = (id: string) => {
     const index = activities.value.findIndex(item => item.id === id)
     if (index !== -1) {
       activities.value.splice(index, 1)

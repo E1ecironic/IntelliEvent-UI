@@ -90,21 +90,21 @@ const organizationApi = {
   /**
    * 更新组织架构
    */
-  updateOrganization(data: Partial<Organization> & { id: number }): Promise<ApiResponse<Organization>> {
+  updateOrganization(data: Partial<Organization> & { id: number | string }): Promise<ApiResponse<Organization>> {
     return request.put('/organizations', data)
   },
 
   /**
    * 删除组织架构
    */
-  deleteOrganization(id: number): Promise<ApiResponse<void>> {
+  deleteOrganization(id: number | string): Promise<ApiResponse<void>> {
     return request.delete(`/organizations/${id}`)
   },
 
   /**
    * 切换组织状态
    */
-  toggleOrganizationStatus(id: number, status: number): Promise<ApiResponse<Organization>> {
+  toggleOrganizationStatus(id: number | string, status: number): Promise<ApiResponse<Organization>> {
     return request.put('/organizations', {
       id,
       status: status === 1 ? 0 : 1
@@ -114,22 +114,32 @@ const organizationApi = {
   /**
    * 获取组织成员列表
    */
-  getOrgUsers(orgId: number): Promise<ApiResponse<any[]>> {
+  getOrgUsers(orgId: number | string): Promise<ApiResponse<any[]>> {
     return request.get(`/user-organization/list-users-by-org/${orgId}`)
   },
 
   /**
    * 添加组织成员
    */
-  addOrgUser(orgId: number, userId: number): Promise<ApiResponse<void>> {
-    return request.post(`/organizations/${orgId}/users/${userId}`)
+  addOrgUser(orgId: number | string, userId: number | string): Promise<ApiResponse<void>> {
+    return request.post(`/user-organization`, { userId, organizationId: orgId, status: 1, roleType: 1 })
   },
 
   /**
    * 移除组织成员
    */
-  removeOrgUser(orgId: number, userId: number): Promise<ApiResponse<void>> {
-    return request.delete(`/organizations/${orgId}/users/${userId}`)
+  async removeOrgUser(orgId: number | string, userId: number | string): Promise<ApiResponse<void>> {
+    // 1. 先查询关系ID
+    const res = await request.post('/user-organization/page', { userId, organizationId: orgId, pageSize: 1, pageNum: 1 }) as any
+    // 兼容 list 和 records
+    const list = res.data.list || res.data.records
+    if (res.code === 200 && list && list.length > 0) {
+        const relationId = list[0].id
+        // 2. 删除关系
+        return request.delete(`/user-organization/${relationId}`)
+    }
+    // 如果找不到关系，也视为成功或忽略
+    return Promise.resolve({ code: 200, message: '关系不存在或已删除', data: null } as any)
   }
 }
 

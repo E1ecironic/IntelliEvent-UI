@@ -3,34 +3,61 @@
     <!-- 搜索区 -->
     <aimi-search>
       <aimi-search-form
-        :formItems="searchFormConfig"
-        @search="handleSearch"
-        @reset="handleReset"
+        :formItems="moduleSearchFormConfig"
+        @search="handleModuleSearch"
+        @reset="handleModuleReset"
       />
       <template #button>
-        <el-button type="primary" @click="handleAdd">新增配置</el-button>
+        <el-button type="primary" @click="handleAdd()">新增配置</el-button>
       </template>
     </aimi-search>
 
     <!-- 表格区 -->
     <aims-table
-      ref="tableRef"
-      v-bind="tableConfig"
-      :data="tableData"
-      :loading="loading"
-      :total="total"
-      :currentPage="currentPage"
-      :pageSize="pageSize"
-      @page-change="handlePageChange"
-      @size-change="handleSizeChange"
+      ref="moduleTableRef"
+      v-bind="moduleTableConfig"
+      :data="moduleTableData"
+      :loading="moduleLoading"
+      :total="moduleTotal"
+      :currentPage="moduleCurrentPage"
+      :pageSize="modulePageSize"
     >
       <template #handler="{ row }">
-        <el-button type="primary" @click="handleEdit(row)">编辑</el-button>
-        <el-button type="danger" @click="handleDelete(row)">删除</el-button>
+        <el-button type="primary" @click="openModuleDetail(row)">查看</el-button>
       </template>
     </aims-table>
 
-    <!-- 弹窗 -->
+    <aimi-dialog
+      v-model="detailDialogVisible"
+      :title="detailDialogTitle"
+      width="70%"
+      :showFooter="false"
+    >
+      <template #body>
+        <div>
+          <div style="margin-bottom: 12px">
+            <el-button type="primary" @click="handleAdd(detailModule)">新增配置</el-button>
+          </div>
+          <aims-table
+            ref="detailTableRef"
+            v-bind="detailTableConfig"
+            :data="detailTableData"
+            :loading="detailLoading"
+            :total="detailTotal"
+            :currentPage="detailCurrentPage"
+            :pageSize="detailPageSize"
+            @page-change="handleDetailPageChange"
+            @size-change="handleDetailSizeChange"
+          >
+            <template #detailHandler="{ row }">
+              <el-button type="primary" @click="handleEdit(row)">编辑</el-button>
+              <el-button type="danger" @click="handleDelete(row)">删除</el-button>
+            </template>
+          </aims-table>
+        </div>
+      </template>
+    </aimi-dialog>
+
     <aimi-dialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑配置' : '新增配置'"
@@ -48,10 +75,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { searchFormConfig, tableConfig, formConfig } from './config'
-import type { SysConfig } from '@/types/sysConfig'
+import { moduleSearchFormConfig, moduleTableConfig, detailTableConfig, formConfig } from './config'
+import type { SysConfig, SysConfigModule } from '@/types/sysConfig'
 import { sysConfigApi } from '@/api'
 import { useTable } from '@/hooks/useTable'
 import {
@@ -62,29 +89,50 @@ import {
   AimiForm
 } from '@/components/Aimi'
 
-// 表格逻辑
-const tableRef = ref()
+const moduleTableRef = ref()
 const {
-  loading,
-  tableData,
-  total,
-  currentPage,
-  pageSize,
-  getTableData,
-  handleSearch,
-  handleReset,
-  refresh
-} = useTable(sysConfigApi.ApiPageList)
+  loading: moduleLoading,
+  tableData: moduleTableData,
+  total: moduleTotal,
+  currentPage: moduleCurrentPage,
+  pageSize: modulePageSize,
+  handleSearch: handleModuleSearch,
+  handleReset: handleModuleReset,
+  refresh: refreshModule
+} = useTable(sysConfigApi.ApiModuleList)
 
-const handlePageChange = (page: number) => {
-  currentPage.value = page
-  getTableData()
+const detailTableRef = ref()
+const {
+  loading: detailLoading,
+  tableData: detailTableData,
+  total: detailTotal,
+  currentPage: detailCurrentPage,
+  pageSize: detailPageSize,
+  getTableData: getDetailTableData,
+  reload: reloadDetail
+} = useTable(sysConfigApi.ApiPageList, { module: '' })
+
+const detailDialogVisible = ref(false)
+const detailModule = ref('')
+const detailDialogTitle = computed(() =>
+  detailModule.value ? `模块配置 - ${detailModule.value}` : '模块配置'
+)
+
+const handleDetailPageChange = (page: number) => {
+  detailCurrentPage.value = page
+  getDetailTableData()
 }
 
-const handleSizeChange = (size: number) => {
-  pageSize.value = size
-  currentPage.value = 1
-  getTableData()
+const handleDetailSizeChange = (size: number) => {
+  detailPageSize.value = size
+  detailCurrentPage.value = 1
+  getDetailTableData()
+}
+
+const openModuleDetail = (row: SysConfigModule) => {
+  detailModule.value = row.module
+  detailDialogVisible.value = true
+  reloadDetail({ module: row.module })
 }
 
 // 弹窗逻辑
@@ -94,16 +142,18 @@ const formRef = ref()
 const formData = reactive<SysConfig>({
   configKey: '',
   configValue: '',
-  description: ''
+  description: '',
+  module: ''
 })
 
-const handleAdd = () => {
+const handleAdd = (module?: string) => {
   isEdit.value = false
   Object.assign(formData, {
     id: undefined,
     configKey: '',
     configValue: '',
-    description: ''
+    description: '',
+    module: module || ''
   })
   dialogVisible.value = true
 }
@@ -125,7 +175,10 @@ const handleDelete = (row: SysConfig) => {
       const res = await sysConfigApi.ApiDelete(row.configKey)
       if (res.code === 200) {
         ElMessage.success('删除成功')
-        refresh()
+        refreshModule()
+        if (detailDialogVisible.value && detailModule.value) {
+          reloadDetail({ module: detailModule.value })
+        }
       }
     } catch (error) {
       console.error(error)
@@ -142,7 +195,10 @@ const handleConfirm = async () => {
     if (res.code === 200) {
       ElMessage.success(isEdit.value ? '修改成功' : '新增成功')
       dialogVisible.value = false
-      refresh()
+      refreshModule()
+      if (detailDialogVisible.value && detailModule.value) {
+        reloadDetail({ module: detailModule.value })
+      }
     }
   } catch (error) {
     console.error(error)

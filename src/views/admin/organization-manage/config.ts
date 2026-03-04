@@ -4,10 +4,10 @@ import { User as UserIcon, SwitchButton, Delete } from '@element-plus/icons-vue'
 
 // 组织架构相关类型
 export interface Organization {
-  id?: number
+  id?: number | string
   name?: string
   code?: string
-  parentId?: number | null
+  parentId?: number | string | null
   managerName?: string
   connectPhone?: string
   email?: string
